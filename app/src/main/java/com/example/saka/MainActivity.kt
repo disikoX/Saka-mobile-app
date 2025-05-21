@@ -9,25 +9,43 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.example.saka.ui.theme.SakaTheme
-import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.FirebaseApp
+import com.google.firebase.firestore.FirebaseFirestore
 
 class MainActivity : ComponentActivity() {
-    private lateinit var firebaseAnalytics: FirebaseAnalytics
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Obtenir une instance de Firebase Analytics
-        val firebaseAnalytics = FirebaseAnalytics.getInstance(this)
+        // Initialize Firebase
+        FirebaseApp.initializeApp(this)
 
-        // Envoyer un événement de test
-        val bundle = Bundle().apply {
-            putString(FirebaseAnalytics.Param.METHOD, "test_method")
-        }
-        firebaseAnalytics.logEvent(FirebaseAnalytics.Event.LOGIN, bundle)
+        val db = FirebaseFirestore.getInstance()
+        val docRef = db.collection("messages").document("firstMessage")
+        val data = hashMapOf("text" to "Hello from Kotlin!")
+
+        val messageText = mutableStateOf("Loading...")
+
+        docRef.set(data)
+            .addOnSuccessListener { println("Document written") }
+            .addOnFailureListener { e -> println("Error: $e") }
+
+        docRef.get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    val text = document.getString("text") ?: "No text"
+                    messageText.value = text
+                } else {
+                    messageText.value = "No such document"
+                }
+            }
+            .addOnFailureListener { exception ->
+                messageText.value = "Error: ${exception.message}"
+            }
 
         enableEdgeToEdge()
         setContent {
@@ -36,6 +54,13 @@ class MainActivity : ComponentActivity() {
                     Greeting(
                         name = "Android",
                         modifier = Modifier.padding(innerPadding)
+                    )
+
+                    Text(
+                        text = messageText.value,
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .padding(16.dp)
                     )
                 }
             }
