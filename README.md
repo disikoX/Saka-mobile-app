@@ -7,4 +7,12 @@ Team members :
   - Josoa
   - Mandresy
   - Damien 
-  
+
+## Prerequisites
+
+- Internet connection to sync Gradle and Firebase on first launch
+
+## Project Setup
+
+1. Sync Gradle
+2. Run the app
