@@ -11,12 +11,15 @@ import com.example.saka.auth.AuthRepository
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    onNavigateToRegister: () -> Unit
+    onLoginSuccess: () -> Unit,          // Callback appelé si connexion OK
+    onNavigateToRegister: () -> Unit     // Redirige vers l'écran d'inscription
 ) {
-    val authRepo = AuthRepository()
+    val authRepo = AuthRepository()      // Lien avec le backend pour l’authentification
+
+    // États pour les champs de saisie et l’erreur
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = Modifier
@@ -24,12 +27,11 @@ fun LoginScreen(
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("Connexion", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Champ email
             TextField(
                 value = email,
                 onValueChange = { email = it },
@@ -37,6 +39,7 @@ fun LoginScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Champ mot de passe
             TextField(
                 value = password,
                 onValueChange = { password = it },
@@ -45,16 +48,32 @@ fun LoginScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Bouton de connexion – appelle signIn() du backend
             Button(onClick = {
-                authRepo.signIn(email, password) { success, _ ->
-                    if (success) onLoginSuccess()
+                authRepo.signIn(email, password) { success, error ->
+                    if (success) {
+                        onLoginSuccess()    // Succès : on redirige
+                    } else {
+                        errorMessage = error // Échec : on affiche l'erreur
+                    }
                 }
             }) {
                 Text("Se connecter")
             }
 
+            // Message d'erreur affiché si connexion échouée
+            if (!errorMessage.isNullOrEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = errorMessage!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Redirection vers l’inscription
             TextButton(onClick = onNavigateToRegister) {
                 Text("Pas encore inscrit ? S’inscrire")
             }

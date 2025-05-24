@@ -12,18 +12,23 @@ fun AppNavGraph(navController: NavHostController) {
         composable("splash") {
             SplashScreen(navController)
         }
+
         composable("login") {
             LoginScreen(
+                // En cas de succès du login, redirige vers l'écran principal (home)
                 onLoginSuccess = { navController.navigate("home") },
                 onNavigateToRegister = { navController.navigate("register") }
             )
         }
+
         composable("register") {
             RegisterScreen(
+                // En cas de succès du register, redirige vers l'écran principal (home)
                 onRegisterSuccess = { navController.navigate("home") },
                 onNavigateToLogin = { navController.popBackStack("login", false) }
             )
         }
+
         composable("home") {
             HomeScreen(navController)
         }
