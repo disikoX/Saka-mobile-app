@@ -14,8 +14,8 @@ fun SplashScreen(navController: NavController) {
 
         // Vérifie si un utilisateur est connecté (via Firebase Auth)
         if (authRepo.isUserLoggedIn()) {
-            // Si oui, on va directement à la page d’accueil
-            navController.navigate("home") {
+            // Si oui, on va directement à la page principale
+            navController.navigate("setting") {
                 popUpTo("splash") { inclusive = true }
             }
         } else {

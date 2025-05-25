@@ -20,23 +20,25 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingScreen(navController: NavController) {
-    val authRepo = AuthRepository()
-    val firestoreRepo = FirestoreRepository()
+    val authRepo = AuthRepository() // Gère l'authentification utilisateur (Firebase Auth)
+    val firestoreRepo = FirestoreRepository() // Gère les interactions avec Firestore (quantité, assignation, récupération)
     val context = LocalContext.current
-    val dataStoreManager = remember { DataStoreManager(context) }
+    val dataStoreManager = remember { DataStoreManager(context) } // Gère les préférences locales (distributeur sélectionné)
 
-    val userId = authRepo.getCurrentUserId()
+    val userId = authRepo.getCurrentUserId() // Récupère l'ID de l'utilisateur connecté
 
-    var userDistributors by remember { mutableStateOf(listOf<String>()) }
-    var selectedDistributor by remember { mutableStateOf("") }
-    var quantityInput by remember { mutableStateOf("") }
-    var quantityCurrent by remember { mutableStateOf<Int?>(null) }
+    var userDistributors by remember { mutableStateOf(listOf<String>()) } // Liste des distributeurs associés à l'utilisateur
+    var selectedDistributor by remember { mutableStateOf("") } // Distributeur actuellement sélectionné
+    var quantityInput by remember { mutableStateOf("") } // Quantité entrée par l'utilisateur
+    var quantityCurrent by remember { mutableStateOf<Int?>(null) } // Quantité actuelle stockée dans Firestore
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Chargement des distributeurs liés à l'utilisateur + dernier distributeur sélectionné
+    // 🔁 Lors du chargement de l'écran ou si l'userId change :
+    // 🔄 1. On récupère les distributeurs associés à l'utilisateur depuis Firestore
+    // 🔄 2. On charge le dernier distributeur sélectionné sauvegardé localement (DataStore)
     LaunchedEffect(userId) {
         if (userId != null) {
             firestoreRepo.getUserDistributors(userId) { distributors ->
@@ -49,7 +51,8 @@ fun SettingScreen(navController: NavController) {
         }
     }
 
-    // Récupérer la quantité du distributeur sélectionné
+    // 🔄 Lorsqu’un nouveau distributeur est sélectionné :
+    // 👉 On récupère la quantité actuelle dans Firestore pour mise à jour de l’affichage
     LaunchedEffect(selectedDistributor) {
         if (selectedDistributor.isNotBlank()) {
             firestoreRepo.getQuantity(selectedDistributor) { quantity ->
@@ -80,7 +83,7 @@ fun SettingScreen(navController: NavController) {
                         }
                     },
                     onLogoutClick = {
-                        authRepo.signOut()
+                        authRepo.signOut() // Déconnexion via Firebase Auth
                         navController.navigate("login") {
                             popUpTo("home") { inclusive = true }
                         }
@@ -100,12 +103,15 @@ fun SettingScreen(navController: NavController) {
                             distributors = userDistributors,
                             selected = selectedDistributor,
                             onDistributorSelected = { newSelected ->
+                                // 💾 Mise à jour du distributeur sélectionné localement (DataStore)
                                 selectedDistributor = newSelected
                                 scope.launch {
                                     dataStoreManager.saveSelectedDistributor(newSelected)
                                 }
                             },
                             onAddDistributorClick = { newDistributor ->
+                                // ➕ Ajout d’un distributeur à la base Firestore
+                                // 🔒 On vérifie si le distributeur existe et est bien attribuable
                                 if (newDistributor.isBlank()) {
                                     scope.launch {
                                         snackbarHostState.showSnackbar("Veuillez saisir un ID valide")
@@ -121,6 +127,7 @@ fun SettingScreen(navController: NavController) {
                                 if (userId != null) {
                                     firestoreRepo.assignDistributorToUser(userId, newDistributor) { success ->
                                         if (success) {
+                                            // 🔄 Mise à jour de l'interface avec le nouveau distributeur
                                             userDistributors = userDistributors + newDistributor
                                             selectedDistributor = newDistributor
                                             scope.launch {
@@ -169,6 +176,7 @@ fun SettingScreen(navController: NavController) {
                     OutlinedTextField(
                         value = quantityInput,
                         onValueChange = { newValue ->
+                            // ✅ Autoriser uniquement les chiffres dans le champ
                             if (newValue.all { it.isDigit() }) {
                                 quantityInput = newValue
                             }
@@ -193,6 +201,7 @@ fun SettingScreen(navController: NavController) {
                                     snackbarHostState.showSnackbar("La quantité maximale autorisée est de 1000g")
                                 }
                             } else {
+                                // ✅ Mise à jour de la quantité dans Firestore
                                 firestoreRepo.setQuantity(selectedDistributor, quantity)
                                 quantityCurrent = quantity
                                 quantityInput = ""
