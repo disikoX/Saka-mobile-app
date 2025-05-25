@@ -7,21 +7,24 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.saka.auth.AuthRepository
 import com.example.saka.backend.FirestoreRepository
 import com.example.saka.ui.components.Header
 import com.example.saka.ui.components.SidebarMenu
+import com.example.saka.local.DataStoreManager
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController) {
+fun SettingScreen(navController: NavController) {
     val authRepo = AuthRepository()
     val firestoreRepo = FirestoreRepository()
+    val context = LocalContext.current
+    val dataStoreManager = remember { DataStoreManager(context) }
 
-    // Récupération de l'utilisateur courant (Firebase Auth)
     val userId = authRepo.getCurrentUserId()
 
     var userDistributors by remember { mutableStateOf(listOf<String>()) }
@@ -33,22 +36,25 @@ fun HomeScreen(navController: NavController) {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Chargement des distributeurs liés à l'utilisateur depuis Firestore
+    // Chargement des distributeurs liés à l'utilisateur + dernier distributeur sélectionné
     LaunchedEffect(userId) {
         if (userId != null) {
             firestoreRepo.getUserDistributors(userId) { distributors ->
                 userDistributors = distributors
-                selectedDistributor = distributors.firstOrNull().orEmpty()
+                scope.launch {
+                    val saved = dataStoreManager.getSelectedDistributor()
+                    selectedDistributor = if (saved in distributors) saved else distributors.firstOrNull().orEmpty()
+                }
             }
         }
     }
 
-    // Chargement de la quantité actuelle pour le distributeur sélectionné
+    // Récupérer la quantité du distributeur sélectionné
     LaunchedEffect(selectedDistributor) {
         if (selectedDistributor.isNotBlank()) {
             firestoreRepo.getQuantity(selectedDistributor) { quantity ->
                 quantityCurrent = quantity
-                quantityInput = "" // Champ vide par défaut
+                quantityInput = ""
             }
         } else {
             quantityCurrent = null
@@ -74,7 +80,6 @@ fun HomeScreen(navController: NavController) {
                         }
                     },
                     onLogoutClick = {
-                        // Déconnexion Firebase + navigation vers l’écran de login
                         authRepo.signOut()
                         navController.navigate("login") {
                             popUpTo("home") { inclusive = true }
@@ -96,9 +101,11 @@ fun HomeScreen(navController: NavController) {
                             selected = selectedDistributor,
                             onDistributorSelected = { newSelected ->
                                 selectedDistributor = newSelected
+                                scope.launch {
+                                    dataStoreManager.saveSelectedDistributor(newSelected)
+                                }
                             },
                             onAddDistributorClick = { newDistributor ->
-                                // Vérification et assignation d’un distributeur à l’utilisateur
                                 if (newDistributor.isBlank()) {
                                     scope.launch {
                                         snackbarHostState.showSnackbar("Veuillez saisir un ID valide")
@@ -116,11 +123,12 @@ fun HomeScreen(navController: NavController) {
                                         if (success) {
                                             userDistributors = userDistributors + newDistributor
                                             selectedDistributor = newDistributor
+                                            scope.launch {
+                                                dataStoreManager.saveSelectedDistributor(newDistributor)
+                                            }
                                         } else {
                                             scope.launch {
-                                                snackbarHostState.showSnackbar(
-                                                    "Erreur : Distributeur inexistant ou déjà assigné."
-                                                )
+                                                snackbarHostState.showSnackbar("Erreur : Distributeur inexistant ou déjà assigné.")
                                             }
                                         }
                                     }
@@ -185,7 +193,6 @@ fun HomeScreen(navController: NavController) {
                                     snackbarHostState.showSnackbar("La quantité maximale autorisée est de 1000g")
                                 }
                             } else {
-                                // Mise à jour de la quantité dans Firestore
                                 firestoreRepo.setQuantity(selectedDistributor, quantity)
                                 quantityCurrent = quantity
                                 quantityInput = ""
@@ -193,7 +200,6 @@ fun HomeScreen(navController: NavController) {
                                     snackbarHostState.showSnackbar("Quantité $quantity définie pour $selectedDistributor")
                                 }
                             }
-
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {

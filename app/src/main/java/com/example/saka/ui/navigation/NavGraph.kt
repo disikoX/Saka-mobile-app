@@ -30,7 +30,7 @@ fun AppNavGraph(navController: NavHostController) {
         }
 
         composable("home") {
-            HomeScreen(navController)
+            SettingScreen(navController)
         }
     }
 }
