@@ -3,174 +3,104 @@ package com.example.saka.backend
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.example.saka.backend.repositories.UserRepository
+import com.example.saka.backend.repositories.DistributorAssignmentRepository
+import com.example.saka.backend.repositories.DistributorSettingsRepository
+import com.example.saka.backend.repositories.DistributorMetricsRepository
 
+/**
+ * FirestoreRepository agit comme une façade principale pour la gestion
+ * des opérations Firestore liées à l'application.
+ */
 class FirestoreRepository {
 
+    private val TAG = "FirestoreRepository"
+
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
-    private val TAG = "SakaApp"
+    private val auth = FirebaseAuth.getInstance()
 
-    // -------------------------------------------------------------------------
-    // 🔐 UTILISATEUR : Création et lecture de documents utilisateur
-    // -------------------------------------------------------------------------
+    // Instanciation des repositories spécialisés
+    private val userRepo = UserRepository(db)
+    private val distributorAssignRepo = DistributorAssignmentRepository(db)
+    private val settingsRepo = DistributorSettingsRepository(db, auth)
+    private val metricsRepo = DistributorMetricsRepository(db, auth)
 
-    /**
-     * Crée un document utilisateur avec un ID donné dans la collection "users".
-     * Utilisé après l'inscription pour initialiser le profil utilisateur.
-     */
+    // ----------------------- UTILISATEUR ------------------------
+
     fun createUserDocument(userId: String, data: Map<String, Any>) {
-        db.collection("users").document(userId)
-            .set(data)
-            .addOnSuccessListener {
-                Log.d(TAG, "User document created")
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Error creating user doc", e)
-            }
+        userRepo.createUserDocument(userId, data)
     }
 
-    /**
-     * Récupère tous les distributeurs associés à un utilisateur donné.
-     * Les distributeurs sont stockés dans la sous-collection "distributors" du document utilisateur.
-     */
     fun getUserDistributors(userId: String, onResult: (List<String>) -> Unit) {
-        db.collection("users")
-            .document(userId)
-            .collection("distributors")
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val distributors = snapshot.documents.mapNotNull { it.id }
-                onResult(distributors)
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Error fetching user distributors", e)
-                onResult(emptyList())
-            }
+        userRepo.getUserDistributors(userId, onResult)
     }
 
-    // -------------------------------------------------------------------------
-    // 🤝 ASSIGNATION : Assignation d'un distributeur à un utilisateur
-    // -------------------------------------------------------------------------
+    // ----------------------- ASSIGNATION ------------------------
 
-    /**
-     * Associe un distributeur (par son ID) à un utilisateur.
-     * Vérifie d'abord que le distributeur existe et n'est pas déjà attribué.
-     * Met à jour le champ "assignedTo" dans le document distributeur,
-     * puis ajoute une référence dans la sous-collection de l'utilisateur.
-     */
-    fun assignDistributorToUser(
-        userId: String,
-        distributorId: String,
-        onResult: (success: Boolean) -> Unit
-    ) {
-        val distributorRef = db.collection("distributors").document(distributorId)
-
-        distributorRef.get()
-            .addOnSuccessListener { document ->
-                if (!document.exists()) {
-                    onResult(false)
-                    return@addOnSuccessListener
-                }
-
-                val assignedTo = document.getString("assignedTo")
-                if (assignedTo != null) {
-                    onResult(false)
-                    return@addOnSuccessListener
-                }
-
-                distributorRef.update("assignedTo", userId)
-                    .addOnSuccessListener {
-                        db.collection("users")
-                            .document(userId)
-                            .collection("distributors")
-                            .document(distributorId)
-                            .set(mapOf("assignedAt" to System.currentTimeMillis()))
-                            .addOnSuccessListener {
-                                onResult(true)
-                            }
-                            .addOnFailureListener {
-                                onResult(false)
-                            }
-                    }
-                    .addOnFailureListener {
-                        onResult(false)
-                    }
-            }
-            .addOnFailureListener {
-                onResult(false)
-            }
+    fun assignDistributorToUser(userId: String, distributorId: String, onResult: (Boolean) -> Unit) {
+        distributorAssignRepo.assignDistributorToUser(userId, distributorId, onResult)
     }
 
-    // -------------------------------------------------------------------------
-    // ⚙️ PARAMÈTRES : Gestion de la ration (quantity) pour un distributeur
-    // -------------------------------------------------------------------------
+    // ----------------------- PARAMÈTRES ------------------------
 
-    /**
-     * Enregistre la quantité de croquettes (en grammes) à distribuer dans les paramètres
-     * du distributeur (stockée dans une sous-collection "settings").
-     * Vérifie d'abord que la quantité est raisonnable et que l'utilisateur est authentifié.
-     */
     fun setQuantity(distributorId: String, quantity: Int) {
-        if (quantity > 1000) {
-            Log.e(TAG, "setQuantity: Quantity exceeds maximum allowed value (1000g)")
-            return
-        }
+        settingsRepo.setQuantity(distributorId, quantity)
+    }
 
-        val userId = auth.currentUser?.uid
-        if (userId == null) {
-            Log.e(TAG, "setQuantity: User not authenticated")
-            return
-        }
+    fun getQuantity(distributorId: String, onResult: (Int?) -> Unit) {
+        settingsRepo.getQuantity(distributorId, onResult)
+    }
 
-        val quantityRef = db.collection("users")
-            .document(userId)
-            .collection("distributors")
-            .document(distributorId)
-            .collection("settings")
-            .document("quantity")
+    fun setCriticalThreshold(distributorId: String, threshold: Int) {
+        settingsRepo.setCriticalThreshold(distributorId, threshold)
+    }
 
-        val data = mapOf("value" to quantity)
+    fun getCriticalThreshold(distributorId: String, onResult: (Int?) -> Unit) {
+        settingsRepo.getCriticalThreshold(distributorId, onResult)
+    }
 
-        quantityRef.set(data)
-            .addOnSuccessListener {
-                Log.d(TAG, "Quantity set successfully for $distributorId")
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Failed to set quantity for $distributorId", e)
-            }
+    // ----------------------- MÉTRIQUES ------------------------
+
+    fun setCurrentWeight(distributorId: String, weight: Float) {
+        metricsRepo.setCurrentWeight(distributorId, weight)
+    }
+
+    fun getCurrentWeight(distributorId: String, onResult: (Float?) -> Unit) {
+        metricsRepo.getCurrentWeight(distributorId, onResult)
     }
 
     /**
-     * Récupère la quantité de croquettes configurée pour un distributeur donné.
-     * La valeur est stockée dans le document "quantity" de la sous-collection "settings".
+     * Vérifie si le poids actuel du distributeur est inférieur ou égal au seuil critique.
+     *
+     * @param distributorId ID du distributeur.
+     * @param onResult Callback avec :
+     *    - true si poids <= seuil critique,
+     *    - false si poids > seuil critique,
+     *    - null si impossible de déterminer (données manquantes).
      */
-    fun getQuantity(distributorId: String, onResult: (quantity: Int?) -> Unit) {
-        val userId = auth.currentUser?.uid
-        if (userId == null) {
-            Log.e(TAG, "getQuantity: User not authenticated")
-            onResult(null)
-            return
-        }
+    fun checkIfWeightIsCritical(distributorId: String, onResult: (Boolean?) -> Unit) {
+        Log.d(TAG, "Début checkIfWeightIsCritical pour $distributorId")
 
-        val quantityRef = db.collection("users")
-            .document(userId)
-            .collection("distributors")
-            .document(distributorId)
-            .collection("settings")
-            .document("quantity")
-
-        quantityRef.get()
-            .addOnSuccessListener { document ->
-                if (document.exists()) {
-                    val quantity = document.getLong("value")?.toInt()
-                    onResult(quantity)
-                } else {
-                    onResult(null)
-                }
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Failed to get quantity for $distributorId", e)
+        getCurrentWeight(distributorId) { currentWeight ->
+            if (currentWeight == null) {
+                Log.e(TAG, "Poids actuel NON trouvé pour $distributorId")
                 onResult(null)
+                return@getCurrentWeight
             }
+            Log.d(TAG, "Poids actuel récupéré: $currentWeight")
+
+            settingsRepo.getCriticalThreshold(distributorId) { criticalThreshold ->
+                if (criticalThreshold == null) {
+                    Log.e(TAG, "Seuil critique NON trouvé pour $distributorId")
+                    onResult(null)
+                    return@getCriticalThreshold
+                }
+                Log.d(TAG, "Seuil critique récupéré: $criticalThreshold")
+
+                val isCritical = currentWeight <= criticalThreshold
+                Log.d(TAG, "Comparaison poids <= seuil ? $isCritical")
+                onResult(isCritical)
+            }
+        }
     }
 }
