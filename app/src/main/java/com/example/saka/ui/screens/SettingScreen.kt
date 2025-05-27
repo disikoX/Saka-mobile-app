@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingScreen(navController: NavController) {
     val authRepo = AuthRepository()
-    val realtimeRepo = RealtimeDatabaseRepository()
+    val realtimeRepo = RealtimeDatabaseRepository() // 🔧 Repository pour interagir avec Firebase Realtime Database
     val context = LocalContext.current
     val dataStoreManager = remember { DataStoreManager(context) }
 
@@ -36,7 +36,7 @@ fun SettingScreen(navController: NavController) {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // 🔁 Chargement des distributeurs et sélection précédente
+    // 🔁 Appel backend : Récupère les distributeurs associés à l'utilisateur depuis Firebase
     LaunchedEffect(userId) {
         if (userId != null) {
             realtimeRepo.getUserDistributors(userId) { distributors ->
@@ -49,7 +49,7 @@ fun SettingScreen(navController: NavController) {
         }
     }
 
-    // 🔄 Quand on change de distributeur
+    // 🔄 Appel backend : Quand on change de distributeur, récupère la quantité actuelle depuis Firebase
     LaunchedEffect(selectedDistributor) {
         if (selectedDistributor.isNotBlank()) {
             realtimeRepo.getQuantity(selectedDistributor) { quantity ->
@@ -118,6 +118,8 @@ fun SettingScreen(navController: NavController) {
                                     }
                                     return@Header
                                 }
+
+                                // ➕ Appel backend : Associe un nouveau distributeur à l'utilisateur dans Firebase
                                 if (userId != null) {
                                     realtimeRepo.assignDistributorToUser(userId, newDistributor) { success ->
                                         if (success) {
@@ -193,6 +195,7 @@ fun SettingScreen(navController: NavController) {
                                     snackbarHostState.showSnackbar("La quantité maximale autorisée est de 1000g")
                                 }
                             } else {
+                                // ✅ Appel backend : Envoie la nouvelle quantité au distributeur sélectionné dans Firebase
                                 realtimeRepo.setQuantity(selectedDistributor, quantity)
                                 quantityCurrent = quantity
                                 quantityInput = ""
