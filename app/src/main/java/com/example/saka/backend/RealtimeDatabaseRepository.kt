@@ -2,33 +2,33 @@ package com.example.saka.backend
 
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.database.FirebaseDatabase
 import com.example.saka.backend.repositories.UserRepository
 import com.example.saka.backend.repositories.DistributorAssignmentRepository
 import com.example.saka.backend.repositories.DistributorSettingsRepository
 import com.example.saka.backend.repositories.DistributorMetricsRepository
 
 /**
- * FirestoreRepository agit comme une façade principale pour la gestion
- * des opérations Firestore liées à l'application.
+ * RealtimeDatabaseRepository agit comme façade principale pour la gestion
+ * des opérations liées à Firebase Realtime Database dans l'application.
  */
-class FirestoreRepository {
+class RealtimeDatabaseRepository {
 
-    private val TAG = "FirestoreRepository"
+    private val TAG = "RealtimeDatabaseRepository"
 
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val dbRef = FirebaseDatabase.getInstance().reference
     private val auth = FirebaseAuth.getInstance()
 
-    // Instanciation des repositories spécialisés
-    private val userRepo = UserRepository(db)
-    private val distributorAssignRepo = DistributorAssignmentRepository(db)
-    private val settingsRepo = DistributorSettingsRepository(db, auth)
-    private val metricsRepo = DistributorMetricsRepository(db, auth)
+    // Repositories spécialisés avec Firebase Realtime Database
+    private val userRepo = UserRepository(dbRef)
+    private val distributorAssignRepo = DistributorAssignmentRepository(dbRef)
+    private val settingsRepo = DistributorSettingsRepository(dbRef, auth)
+    private val metricsRepo = DistributorMetricsRepository(dbRef, auth)
 
     // ----------------------- UTILISATEUR ------------------------
 
     fun createUserDocument(userId: String, data: Map<String, Any>) {
-        userRepo.createUserDocument(userId, data)
+        userRepo.createUserNode(userId, data)
     }
 
     fun getUserDistributors(userId: String, onResult: (List<String>) -> Unit) {
@@ -69,15 +69,6 @@ class FirestoreRepository {
         metricsRepo.getCurrentWeight(distributorId, onResult)
     }
 
-    /**
-     * Vérifie si le poids actuel du distributeur est inférieur ou égal au seuil critique.
-     *
-     * @param distributorId ID du distributeur.
-     * @param onResult Callback avec :
-     *    - true si poids <= seuil critique,
-     *    - false si poids > seuil critique,
-     *    - null si impossible de déterminer (données manquantes).
-     */
     fun checkIfWeightIsCritical(distributorId: String, onResult: (Boolean?) -> Unit) {
         Log.d(TAG, "Début checkIfWeightIsCritical pour $distributorId")
 
@@ -89,7 +80,7 @@ class FirestoreRepository {
             }
             Log.d(TAG, "Poids actuel récupéré: $currentWeight")
 
-            settingsRepo.getCriticalThreshold(distributorId) { criticalThreshold ->
+            getCriticalThreshold(distributorId) { criticalThreshold ->
                 if (criticalThreshold == null) {
                     Log.e(TAG, "Seuil critique NON trouvé pour $distributorId")
                     onResult(null)

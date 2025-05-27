@@ -1,51 +1,32 @@
 package com.example.saka.backend.repositories
 
 import android.util.Log
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.database.DatabaseReference
 
-/**
- * Repository spécialisé dans la gestion des données utilisateurs dans Firestore.
- * Inclut création de document utilisateur et récupération des distributeurs associés.
- */
-class UserRepository(private val db: FirebaseFirestore) {
+class UserRepository(private val dbRef: DatabaseReference) {
 
     private val TAG = "SakaApp.UserRepo"
 
-    /**
-     * Crée un document utilisateur avec un ID donné dans la collection "users".
-     * Utilisé après l'inscription pour initialiser le profil utilisateur.
-     *
-     * @param userId ID unique de l'utilisateur.
-     * @param data Données initiales à stocker dans le document utilisateur.
-     */
-    fun createUserDocument(userId: String, data: Map<String, Any>) {
-        db.collection("users").document(userId)
-            .set(data)
+    fun createUserNode(userId: String, data: Map<String, Any>) {
+        val userRef = dbRef.child("users").child(userId)
+        userRef.setValue(data)
             .addOnSuccessListener {
-                Log.d(TAG, "User document created")
+                Log.d(TAG, "Noeud utilisateur créé")
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "Error creating user doc", e)
+                Log.e(TAG, "Erreur lors de la création du noeud utilisateur", e)
             }
     }
 
-    /**
-     * Récupère tous les IDs des distributeurs associés à un utilisateur donné.
-     *
-     * @param userId ID de l'utilisateur.
-     * @param onResult Callback avec la liste des IDs des distributeurs.
-     */
     fun getUserDistributors(userId: String, onResult: (List<String>) -> Unit) {
-        db.collection("users")
-            .document(userId)
-            .collection("distributors")
-            .get()
+        val distributorsRef = dbRef.child("users").child(userId).child("distributors")
+        distributorsRef.get()
             .addOnSuccessListener { snapshot ->
-                val distributors = snapshot.documents.mapNotNull { it.id }
+                val distributors = snapshot.children.mapNotNull { it.key }
                 onResult(distributors)
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "Error fetching user distributors", e)
+                Log.e(TAG, "Erreur lors de la récupération des distributeurs", e)
                 onResult(emptyList())
             }
     }

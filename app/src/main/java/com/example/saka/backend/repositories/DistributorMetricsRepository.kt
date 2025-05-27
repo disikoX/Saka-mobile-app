@@ -2,25 +2,15 @@ package com.example.saka.backend.repositories
 
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.database.DatabaseReference
 
-/**
- * Repository dédié à la gestion des données dynamiques (métriques)
- * des distributeurs, comme le poids actuel du réservoir.
- *
- * Ces données sont stockées dans la sous-collection "metrics" du distributeur.
- */
 class DistributorMetricsRepository(
-    private val db: FirebaseFirestore,
+    private val dbRef: DatabaseReference,
     private val auth: FirebaseAuth
 ) {
 
     private val TAG = "SakaApp.MetricsRepo"
 
-    /**
-     * Met à jour le poids actuel du réservoir (en grammes) pour un distributeur.
-     * Le poids ne peut pas être négatif.
-     */
     fun setCurrentWeight(distributorId: String, weight: Float) {
         if (weight < 0f) {
             Log.e(TAG, "setCurrentWeight: Weight cannot be negative")
@@ -33,30 +23,16 @@ class DistributorMetricsRepository(
             return
         }
 
-        val weightRef = db.collection("users")
-            .document(userId)
-            .collection("distributors")
-            .document(distributorId)
-            .collection("metrics")
-            .document("currentWeight")
-
-        val data = mapOf(
-            "value" to weight,
-            "updatedAt" to System.currentTimeMillis()
-        )
-
-        weightRef.set(data)
+        val weightRef = dbRef.child("users").child(userId).child("distributors").child(distributorId).child("currentWeight")
+        weightRef.setValue(weight)
             .addOnSuccessListener {
-                Log.d(TAG, "✅ Current weight updated for $distributorId")
+                Log.d(TAG, "✅ Current weight updated for $distributorId: $weight g")
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "❌ Failed to update weight for $distributorId", e)
+                Log.e(TAG, "❌ Failed to update current weight for $distributorId", e)
             }
     }
 
-    /**
-     * Récupère le poids actuel du réservoir pour un distributeur donné.
-     */
     fun getCurrentWeight(distributorId: String, onResult: (Float?) -> Unit) {
         val userId = auth.currentUser?.uid
         if (userId == null) {
@@ -65,28 +41,20 @@ class DistributorMetricsRepository(
             return
         }
 
-        val weightRef = db.collection("users")
-            .document(userId)
-            .collection("distributors")
-            .document(distributorId)
-            .collection("metrics")
-            .document("currentWeight")
-
-        Log.d(TAG, "Fetching weight for userId=$userId, distributorId=$distributorId")
-
+        val weightRef = dbRef.child("users").child(userId).child("distributors").child(distributorId).child("currentWeight")
         weightRef.get()
-            .addOnSuccessListener { document ->
-                if (document.exists()) {
-                    val value = document.getDouble("value")
+            .addOnSuccessListener { snapshot ->
+                if (snapshot.exists()) {
+                    val value = snapshot.getValue(Float::class.java)
                     if (value != null) {
-                        Log.d(TAG, "✅ Weight found: $value")
-                        onResult(value.toFloat())
+                        Log.d(TAG, "✅ Weight found: $value g for $distributorId")
+                        onResult(value)
                     } else {
-                        Log.e(TAG, "⚠️ Document found but 'value' field is missing or null")
+                        Log.e(TAG, "⚠️ Weight value is null or invalid")
                         onResult(null)
                     }
                 } else {
-                    Log.e(TAG, "⚠️ Document does not exist")
+                    Log.e(TAG, "⚠️ currentWeight does not exist for $distributorId")
                     onResult(null)
                 }
             }
@@ -95,5 +63,4 @@ class DistributorMetricsRepository(
                 onResult(null)
             }
     }
-
 }
