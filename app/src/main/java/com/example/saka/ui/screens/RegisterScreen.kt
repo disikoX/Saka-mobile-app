@@ -53,7 +53,7 @@ fun RegisterScreen(
                         val userId = authRepo.getCurrentUserId()
                         if (userId != null) {
                             // On crée une entrée utilisateur dans Realtime Database
-                            dbRepo.createUserDocument(userId, mapOf("email" to email))
+                            dbRepo.createUserNode(userId, mapOf("email" to email))
                         }
                         onRegisterSuccess()
                     } else {

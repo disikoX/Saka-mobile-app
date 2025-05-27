@@ -27,7 +27,7 @@ class RealtimeDatabaseRepository {
 
     // ----------------------- UTILISATEUR ------------------------
 
-    fun createUserDocument(userId: String, data: Map<String, Any>) {
+    fun createUserNode(userId: String, data: Map<String, Any>) {
         userRepo.createUserNode(userId, data)
     }
 
