@@ -8,15 +8,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.saka.auth.AuthRepository
-import com.example.saka.backend.FirestoreRepository
+import com.example.saka.backend.RealtimeDatabaseRepository  // Remplace FirestoreRepository
 
 @Composable
 fun RegisterScreen(
-    onRegisterSuccess: () -> Unit,      // Appelé si l'inscription réussit
-    onNavigateToLogin: () -> Unit       // Redirige vers l'écran de connexion
+    onRegisterSuccess: () -> Unit,
+    onNavigateToLogin: () -> Unit
 ) {
-    val authRepo = AuthRepository()         // Gère l'inscription via Firebase Auth (backend)
-    val firestoreRepo = FirestoreRepository() // Gère les données utilisateur dans Firestore (backend)
+    val authRepo = AuthRepository()
+    val dbRepo = RealtimeDatabaseRepository() // Nouvelle instance pour Realtime Database
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -32,7 +32,6 @@ fun RegisterScreen(
             Text("Inscription", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Champ email
             TextField(
                 value = email,
                 onValueChange = { email = it },
@@ -40,7 +39,6 @@ fun RegisterScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Champ mot de passe
             TextField(
                 value = password,
                 onValueChange = { password = it },
@@ -49,26 +47,23 @@ fun RegisterScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Bouton d'inscription – crée un compte avec Firebase Auth
             Button(onClick = {
                 authRepo.registerUser(email, password) { success, error ->
                     if (success) {
-                        // Si succès, on récupère l'ID utilisateur courant
                         val userId = authRepo.getCurrentUserId()
                         if (userId != null) {
-                            // Création d’un document utilisateur dans Firestore
-                            firestoreRepo.createUserDocument(userId, mapOf("email" to email))
+                            // On crée une entrée utilisateur dans Realtime Database
+                            dbRepo.createUserNode(userId, mapOf("email" to email))
                         }
                         onRegisterSuccess()
                     } else {
-                        errorMessage = error // En cas d’erreur, on l’affiche
+                        errorMessage = error
                     }
                 }
             }) {
                 Text("Créer un compte")
             }
 
-            // Affichage de l’erreur si besoin
             if (!errorMessage.isNullOrEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -80,7 +75,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Redirection vers la connexion
             TextButton(onClick = onNavigateToLogin) {
                 Text("Déjà inscrit ? Se connecter")
             }
