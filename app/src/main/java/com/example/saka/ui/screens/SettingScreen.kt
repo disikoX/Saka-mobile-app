@@ -164,7 +164,7 @@ fun SettingScreen(navController: NavController) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     quantityCurrent?.let {
-                        Text(text = "Quantité actuelle : $it")
+                        Text(text = "Quantité de la ration actuelle (en g) : $it")
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 
@@ -175,7 +175,7 @@ fun SettingScreen(navController: NavController) {
                                 quantityInput = newValue
                             }
                         },
-                        label = { Text("Quantité (à définir)") },
+                        label = { Text("Quantité de la ration (à définir en g)") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
