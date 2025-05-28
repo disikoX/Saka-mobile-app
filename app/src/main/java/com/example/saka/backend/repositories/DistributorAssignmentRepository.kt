@@ -32,10 +32,7 @@ class DistributorAssignmentRepository(private val dbRef: DatabaseReference) {
             val updates = mapOf<String, Any?>(
                 "/distributors/$distributorId/assignedTo" to userId,
                 "/distributors/$distributorId/lastUpdate" to System.currentTimeMillis(),
-                "/users/$userId/distributors/$distributorId/currentWeight" to 0,
-                "/users/$userId/distributors/$distributorId/settings/quantity" to 0,
-                "/users/$userId/distributors/$distributorId/settings/criticalThreshold" to 0
-                // "planning" pourra être ajouté plus tard par l'utilisateur
+                "/users/$userId/distributors/$distributorId" to true
             )
 
             dbRef.updateChildren(updates)
