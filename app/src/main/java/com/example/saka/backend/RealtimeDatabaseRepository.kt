@@ -8,6 +8,7 @@ import com.example.saka.backend.repositories.DistributorAssignmentRepository
 import com.example.saka.backend.repositories.DistributorSettingsRepository
 // import com.example.saka.backend.repositories.DistributorMetricsRepository
 import com.example.saka.backend.repositories.DistributorObserverRepository
+import com.example.saka.backend.repositories.DistributorPlanningRepository
 
 /**
  * RealtimeDatabaseRepository agit comme façade principale pour la gestion
@@ -24,6 +25,7 @@ class RealtimeDatabaseRepository {
     private val settingsRepo = DistributorSettingsRepository(dbRef, auth)
 //    private val metricsRepo = DistributorMetricsRepository(dbRef, auth)
     private val observerRepo = DistributorObserverRepository(dbRef)
+    private val planningRepo = DistributorPlanningRepository(dbRef)
 
     // ----------------------- UTILISATEUR ------------------------
 
@@ -109,4 +111,43 @@ class RealtimeDatabaseRepository {
         return observerRepo.observeCurrentWeight(userId, distributorId, onWeightChanged, onError)
     }
 
+    // ----------------------- PLANNING ------------------------
+
+    /**
+     * Crée un nouveau planning avec un ID auto-généré.
+     * Retourne l'ID créé et un booléen succès via onComplete.
+     */
+    fun createPlanning(
+        userId: String,
+        distributorId: String,
+        planningData: Map<String, Any>,
+        onComplete: (success: Boolean, planningId: String?) -> Unit
+    ) {
+        planningRepo.createPlanning(userId, distributorId, planningData, onComplete)
+    }
+
+    /**
+     * Met à jour un planning existant identifié par planningId.
+     */
+    fun updatePlanning(
+        userId: String,
+        distributorId: String,
+        planningId: String,
+        planningData: Map<String, Any>,
+        onComplete: (Boolean) -> Unit
+    ) {
+        planningRepo.updatePlanning(userId, distributorId, planningId, planningData, onComplete)
+    }
+
+    /**
+     * Supprime un planning d’un distributeur d’un utilisateur.
+     */
+    fun deletePlanning(
+        userId: String,
+        distributorId: String,
+        planningId: String,
+        onComplete: (Boolean) -> Unit
+    ) {
+        planningRepo.deletePlanning(userId, distributorId, planningId, onComplete)
+    }
 }

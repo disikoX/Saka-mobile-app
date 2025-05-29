@@ -72,20 +72,21 @@ class TestRealtimeDatabaseActivity : ComponentActivity() {
                 val userId = result.user?.uid ?: return@addOnSuccessListener
                 Log.d(TAG, "✅ Connecté avec $userId")
 
-                // Lance une coroutine pour récupérer le distributorId dans DataStore
                 lifecycleScope.launch {
                     val distributorId = dataStoreManager.getSelectedDistributor()
-                    Log.d(TAG, "Distributor ID récupéré depuis DataStore : $distributorId")  // <-- Ici le log
+                    Log.d(TAG, "Distributor ID récupéré depuis DataStore : $distributorId")
                     if (distributorId.isBlank()) {
                         Log.e(TAG, "❌ Aucun distributeur sélectionné trouvé dans DataStore")
                         return@launch
                     }
 
-                    // Fixe le seuil critique
                     repo.setCriticalThreshold(distributorId, 200)
                     Log.d(TAG, "🚨 Seuil critique défini à 200g")
 
                     startWeightObservation(repo, userId, distributorId)
+
+                    // --- NOUVEAU : lancer les tests planning ---
+                    runPlanningTests(repo, userId, distributorId)
                 }
 
             }
@@ -114,9 +115,48 @@ class TestRealtimeDatabaseActivity : ComponentActivity() {
         )
     }
 
+    // --- Tests pour la fonctionnalité Interface planning distribution automatique ---
+    private fun runPlanningTests(repo: RealtimeDatabaseRepository, userId: String, distributorId: String) {
+        Log.d(TAG, "[PlanningAuto] Début des tests planning")
+
+        val planningData = mapOf(
+            "time" to "08:00",
+            "enabled" to true
+        )
+
+        // 1) Créer un nouveau planning (ID auto-généré)
+        repo.createPlanning(userId, distributorId, planningData) { success, newPlanningId ->
+            if (success && newPlanningId != null) {
+                Log.d(TAG, "[PlanningAuto] Planning créé avec ID : $newPlanningId")
+
+                // 2) Mise à jour du planning créé
+                val updatedPlanningData = planningData.toMutableMap()
+                updatedPlanningData["hour"] = "07:00"
+                repo.updatePlanning(userId, distributorId, newPlanningId, updatedPlanningData) { updateSuccess ->
+                    if (updateSuccess) {
+                        Log.d(TAG, "[PlanningAuto] Planning mis à jour : $newPlanningId")
+
+                        // 3) Suppression du planning
+                        repo.deletePlanning(userId, distributorId, newPlanningId) { deleteSuccess ->
+                            if (deleteSuccess) {
+                                Log.d(TAG, "[PlanningAuto] Planning supprimé : $newPlanningId")
+                            } else {
+                                Log.e(TAG, "[PlanningAuto] Échec suppression planning : $newPlanningId")
+                            }
+                        }
+                    } else {
+                        Log.e(TAG, "[PlanningAuto] Échec mise à jour planning : $newPlanningId")
+                    }
+                }
+
+            } else {
+                Log.e(TAG, "[PlanningAuto] Échec création planning")
+            }
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
-        // Nettoyage de l'écouteur
         weightListenerHandle?.remove()
     }
 }
