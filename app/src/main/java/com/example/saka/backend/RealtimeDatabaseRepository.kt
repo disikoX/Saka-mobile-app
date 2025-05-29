@@ -1,20 +1,19 @@
 package com.example.saka.backend
 
-import android.util.Log
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.example.saka.backend.repositories.UserRepository
 import com.example.saka.backend.repositories.DistributorAssignmentRepository
 import com.example.saka.backend.repositories.DistributorSettingsRepository
-import com.example.saka.backend.repositories.DistributorMetricsRepository
+// import com.example.saka.backend.repositories.DistributorMetricsRepository
+import com.example.saka.backend.repositories.DistributorObserverRepository
 
 /**
  * RealtimeDatabaseRepository agit comme façade principale pour la gestion
  * des opérations liées à Firebase Realtime Database dans l'application.
  */
 class RealtimeDatabaseRepository {
-
-    private val TAG = "RealtimeDatabaseRepository"
 
     private val dbRef = FirebaseDatabase.getInstance().reference
     private val auth = FirebaseAuth.getInstance()
@@ -23,7 +22,8 @@ class RealtimeDatabaseRepository {
     private val userRepo = UserRepository(dbRef)
     private val distributorAssignRepo = DistributorAssignmentRepository(dbRef)
     private val settingsRepo = DistributorSettingsRepository(dbRef, auth)
-    private val metricsRepo = DistributorMetricsRepository(dbRef, auth)
+//    private val metricsRepo = DistributorMetricsRepository(dbRef, auth)
+    private val observerRepo = DistributorObserverRepository(dbRef)
 
     // ----------------------- UTILISATEUR ------------------------
 
@@ -86,49 +86,27 @@ class RealtimeDatabaseRepository {
     // ----------------------- MÉTRIQUES ------------------------
 
     /**
-     * Met à jour le poids actuel détecté dans le bol du distributeur (en grammes).
-     */
-    fun setCurrentWeight(distributorId: String, weight: Float) {
-        metricsRepo.setCurrentWeight(distributorId, weight)
-    }
-
-    /**
      * Récupère le poids actuel détecté par le distributeur.
      */
-    fun getCurrentWeight(distributorId: String, onResult: (Float?) -> Unit) {
-        metricsRepo.getCurrentWeight(distributorId, onResult)
-    }
+//    fun getCurrentWeight(distributorId: String, onResult: (Float?) -> Unit) {
+//        metricsRepo.getCurrentWeight(distributorId, onResult)
+//    }
+
+    // ----------------------- OBSERVATION TEMPS RÉEL ------------------------
 
     /**
-     * Vérifie si le poids actuel est en dessous ou égal au seuil critique.
-     * Cette méthode combine les appels à getCurrentWeight et getCriticalThreshold.
+     * Active une écoute en temps réel sur la valeur du poids actuel d’un distributeur.
+     * À chaque changement détecté dans la base, la fonction [onWeightChanged] est appelée avec la nouvelle valeur.
+     * En cas d’erreur d’accès à la base, [onError] est invoqué avec le détail de l’erreur.
+     * Retourne un handle permettant de supprimer l'écoute ultérieurement via `.remove()`.
      */
-    fun checkIfWeightIsCritical(distributorId: String, onResult: (Boolean?) -> Unit) {
-        Log.d(TAG, "Début checkIfWeightIsCritical pour $distributorId")
-
-        // Étape 1 : récupérer le poids actuel
-        getCurrentWeight(distributorId) { currentWeight ->
-            if (currentWeight == null) {
-                Log.e(TAG, "Poids actuel NON trouvé pour $distributorId")
-                onResult(null)
-                return@getCurrentWeight
-            }
-            Log.d(TAG, "Poids actuel récupéré: $currentWeight")
-
-            // Étape 2 : récupérer le seuil critique
-            getCriticalThreshold(distributorId) { criticalThreshold ->
-                if (criticalThreshold == null) {
-                    Log.e(TAG, "Seuil critique NON trouvé pour $distributorId")
-                    onResult(null)
-                    return@getCriticalThreshold
-                }
-                Log.d(TAG, "Seuil critique récupéré: $criticalThreshold")
-
-                // Étape 3 : comparaison
-                val isCritical = currentWeight <= criticalThreshold
-                Log.d(TAG, "Comparaison poids <= seuil ? $isCritical")
-                onResult(isCritical)
-            }
-        }
+    fun observeCurrentWeight(
+        userId: String,
+        distributorId: String,
+        onWeightChanged: (Float) -> Unit,
+        onError: (DatabaseError) -> Unit
+    ): DistributorObserverRepository.WeightListenerHandle {
+        return observerRepo.observeCurrentWeight(userId, distributorId, onWeightChanged, onError)
     }
+
 }
