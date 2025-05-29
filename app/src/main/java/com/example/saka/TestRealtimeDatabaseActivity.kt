@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.material3.Text
 import androidx.lifecycle.lifecycleScope
 import androidx.core.app.NotificationCompat
@@ -24,6 +25,7 @@ class TestRealtimeDatabaseActivity : ComponentActivity() {
     private val TAG = "TestRealtimeDB"
     private var weightListenerHandle: DistributorObserverRepository.WeightListenerHandle? = null
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -60,6 +62,7 @@ class TestRealtimeDatabaseActivity : ComponentActivity() {
         notificationManager.notify(1, builder.build())
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun signInAndStartListening() {
         val email = "test@gmail.com"
         val password = "123456"
@@ -85,9 +88,14 @@ class TestRealtimeDatabaseActivity : ComponentActivity() {
 
                     startWeightObservation(repo, userId, distributorId)
 
-                    // --- NOUVEAU : lancer les tests planning ---
                     runPlanningTests(repo, userId, distributorId)
+
+                    // Test du triggerNow
+                    Log.d(TAG, "[TriggerNow] Déclenchement manuel en cours...")
+                    repo.triggerNow(userId, distributorId)
+                    Log.d(TAG, "[TriggerNow] Champ triggerNow défini à true")
                 }
+
 
             }
             .addOnFailureListener {
@@ -116,6 +124,7 @@ class TestRealtimeDatabaseActivity : ComponentActivity() {
     }
 
     // --- Tests pour la fonctionnalité Interface planning distribution automatique ---
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun runPlanningTests(repo: RealtimeDatabaseRepository, userId: String, distributorId: String) {
         Log.d(TAG, "[PlanningAuto] Début des tests planning")
 

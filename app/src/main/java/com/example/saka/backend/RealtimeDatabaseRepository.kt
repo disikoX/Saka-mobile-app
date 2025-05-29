@@ -1,5 +1,7 @@
 package com.example.saka.backend
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
@@ -9,6 +11,7 @@ import com.example.saka.backend.repositories.DistributorSettingsRepository
 // import com.example.saka.backend.repositories.DistributorMetricsRepository
 import com.example.saka.backend.repositories.DistributorObserverRepository
 import com.example.saka.backend.repositories.DistributorPlanningRepository
+import com.example.saka.backend.repositories.DistributorTriggerRepository
 
 /**
  * RealtimeDatabaseRepository agit comme façade principale pour la gestion
@@ -26,6 +29,7 @@ class RealtimeDatabaseRepository {
 //    private val metricsRepo = DistributorMetricsRepository(dbRef, auth)
     private val observerRepo = DistributorObserverRepository(dbRef)
     private val planningRepo = DistributorPlanningRepository(dbRef)
+    private val triggerRepo = DistributorTriggerRepository(dbRef)
 
     // ----------------------- UTILISATEUR ------------------------
 
@@ -117,6 +121,7 @@ class RealtimeDatabaseRepository {
      * Crée un nouveau planning avec un ID auto-généré.
      * Retourne l'ID créé et un booléen succès via onComplete.
      */
+    @RequiresApi(Build.VERSION_CODES.O)
     fun createPlanning(
         userId: String,
         distributorId: String,
@@ -129,6 +134,7 @@ class RealtimeDatabaseRepository {
     /**
      * Met à jour un planning existant identifié par planningId.
      */
+    @RequiresApi(Build.VERSION_CODES.O)
     fun updatePlanning(
         userId: String,
         distributorId: String,
@@ -150,4 +156,16 @@ class RealtimeDatabaseRepository {
     ) {
         planningRepo.deletePlanning(userId, distributorId, planningId, onComplete)
     }
+
+    // ----------------------- TRIGGER MANUEL ------------------------
+
+    /**
+     * Déclenche manuellement la distribution de croquettes en définissant
+     * le champ `triggerNow` à true dans la base. L’ESP32 se chargera de
+     * remettre ce champ à false une fois la distribution effectuée.
+     */
+    fun triggerNow(userId: String, distributorId: String) {
+        triggerRepo.setTriggerNow(userId, distributorId, true)
+    }
+
 }
