@@ -11,28 +11,6 @@ class DistributorMetricsRepository(
 
     private val TAG = "SakaApp.MetricsRepo"
 
-    fun setCurrentWeight(distributorId: String, weight: Float) {
-        if (weight < 0f) {
-            Log.e(TAG, "setCurrentWeight: Weight cannot be negative")
-            return
-        }
-
-        val userId = auth.currentUser?.uid
-        if (userId == null) {
-            Log.e(TAG, "setCurrentWeight: User not authenticated")
-            return
-        }
-
-        val weightRef = dbRef.child("users").child(userId).child("distributors").child(distributorId).child("currentWeight")
-        weightRef.setValue(weight)
-            .addOnSuccessListener {
-                Log.d(TAG, "✅ Current weight updated for $distributorId: $weight g")
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "❌ Failed to update current weight for $distributorId", e)
-            }
-    }
-
     fun getCurrentWeight(distributorId: String, onResult: (Float?) -> Unit) {
         val userId = auth.currentUser?.uid
         if (userId == null) {
