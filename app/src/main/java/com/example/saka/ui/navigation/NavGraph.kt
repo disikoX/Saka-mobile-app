@@ -1,0 +1,49 @@
+package com.example.saka.ui.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import com.example.saka.ui.screens.*
+
+@Composable
+fun AppNavGraph(navController: NavHostController) {
+    NavHost(navController = navController, startDestination = "home") {
+        composable("splash") {
+            SplashScreen(navController)
+        }
+
+        composable("login") {
+            LoginScreen(
+                // En cas de succès du login, redirige vers l'écran principal (setting)
+                onLoginSuccess = { navController.navigate("setting") },
+                onNavigateToRegister = { navController.navigate("register") }
+            )
+        }
+
+        composable("register") {
+            RegisterScreen(
+                // En cas de succès du register, redirige vers l'écran principal (setting)
+                onRegisterSuccess = { navController.navigate("setting") },
+                onNavigateToLogin = { navController.popBackStack("login", false) }
+            )
+        }
+
+        composable("setting") {
+            SettingScreen(navController)
+        }
+
+        composable("home") {
+            HomeScreen(navController)
+        }
+
+        composable("planning") {
+            PlanningScreen(navController)
+        }
+
+        composable("history"){
+            HistoryScreen(navController)
+        }
+
+    }
+}

@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "40447091857",
+    "firebase_url": "https://saka-6af59-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "saka-6af59",
+    "storage_bucket": "saka-6af59.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:40447091857:android:d32e27b324a0c08d224b30",
+        "android_client_info": {
+          "package_name": "com.example.saka"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxQi0aFAUaAMp8UXMx6mTtghZJWhs9Vvw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
