@@ -26,11 +26,12 @@ import android.app.TimePickerDialog
 import android.os.Build
 import android.widget.TimePicker
 import androidx.annotation.RequiresApi
+import androidx.navigation.NavController
 import java.util.*
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @Composable
-fun PlanningScreen() {
+fun PlanningScreen(navController: NavController) {
     val scrollState = rememberScrollState()
     val distributions = remember { mutableStateListOf("07:00", "12:00") }
 
@@ -69,7 +70,7 @@ fun PlanningScreen() {
     val context = LocalContext.current
 
     Scaffold(
-        bottomBar = { BottomNavigationBar(current = "Planning") }
+        bottomBar = { BottomNavigationBar(current = "Planning",navController) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
