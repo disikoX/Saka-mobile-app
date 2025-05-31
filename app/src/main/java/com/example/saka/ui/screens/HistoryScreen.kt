@@ -15,12 +15,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.example.saka.ui.components.BottomNavigationBar
 
 @Composable
-fun HistoryScreen() {
+fun HistoryScreen(navController: NavController) {
     Scaffold(
-        bottomBar = { BottomNavigationBar(current = "Historique") }
+        bottomBar = { BottomNavigationBar(current = "Historique",navController) }
     ) { paddingValues ->
         Column(
             modifier = Modifier

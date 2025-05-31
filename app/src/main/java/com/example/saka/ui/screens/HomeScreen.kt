@@ -18,13 +18,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.example.saka.ui.components.BottomNavItem
+import com.example.saka.ui.components.BottomNavigationBar
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(navController: NavController) {
     Scaffold(
-        bottomBar = { BottomNavigationBar() }
+        bottomBar = { BottomNavigationBar(current = "home",navController) }
     ) {
+        Text("Mon Distributeur", style = MaterialTheme.typography.h6)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -32,8 +36,29 @@ fun HomeScreen() {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(modifier = Modifier.height(24.dp))
+            //Circular Progress Indicator
+            Box(
+                modifier = Modifier
+                    .size(150.dp)
+                    .align(Alignment.CenterHorizontally),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    progress = 0.73f,
+                    modifier = Modifier.fillMaxSize(),
+                    strokeWidth = 12.dp,
+                    color = MaterialTheme.colors.primary
+                )
+                Text(
+                    text = "73%",
+                    fontSize = 32.sp,
+                    color = MaterialTheme.colors.primary
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+
             Text("Niveau de croquettes", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Text("73%", fontSize = 40.sp, color = Color.Green)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -57,35 +82,6 @@ fun HomeScreen() {
                     Text("Dernière : il y a 2h")
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text("Prochain repas prévu à 18:00", fontSize = 16.sp)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text("Connecté | Batterie : 85%", fontSize = 14.sp)
-        }
-    }
-}
-
-@Composable
-fun BottomNavigationBar(current: String = "Accueil", onItemSelected: (String) -> Unit = {}) {
-    val items = listOf(
-        BottomNavItem.Accueil,
-        BottomNavItem.Planning,
-        BottomNavItem.Historique,
-        BottomNavItem.Reglages
-    )
-
-    BottomNavigation {
-        items.forEach { item ->
-            BottomNavigationItem(
-                selected = current == item.label,
-                onClick = { onItemSelected(item.label) },
-                icon = { Icon(imageVector = item.icon, contentDescription = item.label) },
-                label = { Text(item.label) }
-            )
         }
     }
 }
