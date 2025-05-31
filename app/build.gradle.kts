@@ -63,4 +63,9 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.datastore.preferences.v117)
     implementation(libs.firebase.database.ktx)
+    implementation("androidx.compose.ui:ui:1.5.4")
+    implementation("androidx.compose.material:material:1.5.4")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.5.4")
+    //UI Dependencies
+    implementation(libs.androidx.compose.material.icons.extended)
 }
