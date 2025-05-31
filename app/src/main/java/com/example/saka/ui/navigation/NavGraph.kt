@@ -8,7 +8,7 @@ import com.example.saka.ui.screens.*
 
 @Composable
 fun AppNavGraph(navController: NavHostController) {
-    NavHost(navController = navController, startDestination = "splash") {
+    NavHost(navController = navController, startDestination = "home") {
         composable("splash") {
             SplashScreen(navController)
         }
@@ -32,5 +32,18 @@ fun AppNavGraph(navController: NavHostController) {
         composable("setting") {
             SettingScreen(navController)
         }
+
+        composable("home") {
+            HomeScreen(navController)
+        }
+
+        composable("planning") {
+            PlanningScreen(navController)
+        }
+
+        composable("history"){
+            HistoryScreen(navController)
+        }
+
     }
 }
