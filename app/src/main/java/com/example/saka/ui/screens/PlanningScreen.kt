@@ -1,5 +1,6 @@
 package com.example.saka.ui.screens
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
@@ -24,53 +25,112 @@ import androidx.compose.ui.unit.sp
 import com.example.saka.ui.components.BottomNavigationBar
 import android.app.TimePickerDialog
 import android.os.Build
+import android.util.Log
 import android.widget.TimePicker
 import androidx.annotation.RequiresApi
 import androidx.navigation.NavController
+import com.example.saka.auth.AuthRepository
+import com.example.saka.backend.RealtimeDatabaseRepository
 import java.util.*
+import com.example.saka.local.DataStoreManager
+import kotlinx.coroutines.launch
 
+@SuppressLint("DefaultLocale")
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @Composable
 fun PlanningScreen(navController: NavController) {
+    val authRepo = AuthRepository()
+    val realtimeRepo = RealtimeDatabaseRepository()
     val scrollState = rememberScrollState()
-    val distributions = remember { mutableStateListOf("07:00", "12:00") }
+    val distributions = remember { mutableStateListOf<String>() }
+    val switchesState = remember { mutableStateListOf<Boolean>() }
+    val dragOffsetsX = remember { mutableStateListOf<Float>() }
+    val planningIds = mutableListOf<String>()
 
-    // État des switches par ligne, synchronisé avec distributions
-    val switchesState = remember { mutableStateListOf<Boolean>().apply { repeat(distributions.size) { add(true) } } }
+    val localContext = LocalContext.current
+    val dataStoreManager = remember { DataStoreManager(localContext) }
+    val status = remember { mutableStateOf("...") }
+    val scope = rememberCoroutineScope()
+    val nextDistributionTime = remember { mutableStateOf("...") }
+    val isBreakActive = remember { mutableStateOf(false) }
+    val breakDuration = remember { mutableStateOf(0) }
+    val breakResumeTime = remember { mutableStateOf("...") }
 
-    // Synchronisation taille switchesState / distributions
-    LaunchedEffect(distributions.size) {
-        if (switchesState.size < distributions.size) {
-            repeat(distributions.size - switchesState.size) {
-                switchesState.add(true)
-            }
-        } else if (switchesState.size > distributions.size) {
-            repeat(switchesState.size - distributions.size) {
-                switchesState.removeLast()
+    fun refreshPlannings(userId: String, distributorId: String) {
+        realtimeRepo.getPlannings(userId, distributorId) { plannings ->
+            distributions.clear()
+            switchesState.clear()
+            dragOffsetsX.clear()
+            planningIds.clear()
+
+            plannings.forEach { (planningId, planningData) ->
+                val time = planningData["time"] as? String ?: "00:00"
+                val enabled = planningData["enabled"] as? Boolean ?: false
+
+                distributions.add(time)
+                switchesState.add(enabled)
+                dragOffsetsX.add(0f)
+                planningIds.add(planningId)
             }
         }
     }
 
-    // État pour gérer la translation X des lignes dragables
-    val dragOffsetsX = remember { mutableStateListOf<Float>().apply { repeat(distributions.size) { add(0f) } } }
+    fun refreshNewDistributionTime(userId: String, distributorId: String){
+        realtimeRepo.getNextDistributionTime(userId, distributorId) { time ->
+            Log.d("PlanningScreen", "Next Distribution Time: $time")
+            if (time != null) {
+                nextDistributionTime.value = time
+            }
+        }
+    }
 
-    // Synchronisation taille dragOffsetsX / distributions
-    LaunchedEffect(distributions.size) {
-        if (dragOffsetsX.size < distributions.size) {
-            repeat(distributions.size - dragOffsetsX.size) {
-                dragOffsetsX.add(0f)
+
+    LaunchedEffect(Unit) {
+        val distributorId = dataStoreManager.getSelectedDistributor()
+        val userId = authRepo.getCurrentUserId()
+        Log.d("PlanningScreen", "Distributor ID: $distributorId")
+
+        if (distributorId.isNotEmpty()) {
+            realtimeRepo.getDistributorStatus(distributorId) { result ->
+                Log.d("PlanningScreen", "Status Firebase result: $result")
+                status.value = if (result == "Connecté") "🟢 Connecté" else "🔴 Déconnecté"
             }
-        } else if (dragOffsetsX.size > distributions.size) {
-            repeat(dragOffsetsX.size - distributions.size) {
-                dragOffsetsX.removeLast()
+
+            if (userId != null) {
+                refreshNewDistributionTime(userId, distributorId)
             }
+        }
+
+        if (userId != null && distributorId.isNotEmpty()) {
+            realtimeRepo.getBreakInfos(userId, distributorId) { duration, active ->
+                if (active != null) {
+                    isBreakActive.value = active
+                }
+                if (duration != null) {
+                    breakDuration.value = duration
+                }
+
+                if (duration != null) {
+                    if (active == true && duration > 0) {
+                        val calendar = Calendar.getInstance()
+                        calendar.add(Calendar.HOUR_OF_DAY, duration)
+                        val hours = calendar.get(Calendar.HOUR_OF_DAY)
+                        val minutes = calendar.get(Calendar.MINUTE)
+                        breakResumeTime.value = String.format("%02d:%02d", hours, minutes)
+                    }
+                }
+            }
+        }
+
+        if (userId != null && distributorId.isNotEmpty()) {
+            refreshPlannings(userId, distributorId)
         }
     }
 
     val context = LocalContext.current
 
     Scaffold(
-        bottomBar = { BottomNavigationBar(current = "Planning",navController) }
+        bottomBar = { BottomNavigationBar(current = "Planning", navController) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -78,7 +138,6 @@ fun PlanningScreen(navController: NavController) {
                 .padding(16.dp)
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                // Quand on clique quelque part dans la colonne, on remet tous les dragOffsets à 0
                 .clickable {
                     for (i in dragOffsetsX.indices) {
                         dragOffsetsX[i] = 0f
@@ -99,12 +158,12 @@ fun PlanningScreen(navController: NavController) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("\uD83D\uDFE2 Connecté", fontSize = 14.sp)
+                        Text(status.value, fontSize = 14.sp)
                         Text("75% restant", fontSize = 14.sp)
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text("Prochaine distribution :", fontWeight = FontWeight.Bold)
-                    Text("Aujourd'hui à 18:00")
+                    Text(nextDistributionTime.value)
                 }
             }
 
@@ -119,76 +178,142 @@ fun PlanningScreen(navController: NavController) {
                     Text("Suspendre temporairement toutes les distributions")
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    var jours by remember { mutableStateOf("") }
-                    var heures by remember { mutableStateOf("") }
+                    if (isBreakActive.value) {
+                        Text("La pause est active.")
+                        Text(
+                            "Reprise prévue à : ${breakResumeTime.value}",
+                            fontWeight = FontWeight.Bold
+                        )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(56.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = jours,
-                                onValueChange = { newValue ->
-                                    if (newValue.all { it.isDigit() }) {
-                                        jours = newValue
-                                    }
-                                },
-                                placeholder = { Text("Jours") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("j", modifier = Modifier.padding(end = 4.dp))
-                        }
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(56.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = heures,
-                                onValueChange = { newValue ->
-                                    if (newValue.all { it.isDigit() }) {
-                                        val h = newValue.toIntOrNull() ?: 0
-                                        if (h >= 24) {
-                                            val extraDays = h / 24
-                                            val remainingHours = h % 24
-                                            jours = ((jours.toIntOrNull() ?: 0) + extraDays).toString()
-                                            heures = remainingHours.toString()
-                                        } else {
-                                            heures = newValue
-                                        }
-                                    }
-                                },
-                                placeholder = { Text("Heures") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("h", modifier = Modifier.padding(end = 4.dp))
-                        }
-
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         Button(
                             onClick = {
-                                // TODO : utiliser jours et heures convertis
+                                scope.launch {
+                                    val userId = authRepo.getCurrentUserId()
+                                    val distributorId = dataStoreManager.getSelectedDistributor()
+
+                                    if (userId != null && distributorId.isNotEmpty()) {
+                                        realtimeRepo.configureBreak(
+                                            userId = userId,
+                                            distributorId = distributorId,
+                                            duration = 0,
+                                            active = false
+                                        ) { success ->
+                                            Log.d("PlanningScreen", "Pause désactivée: $success")
+                                            if (success) {
+                                                isBreakActive.value = false
+                                                breakResumeTime.value = "..."
+                                            }
+                                        }
+                                    }
+                                }
                             },
-                            modifier = Modifier.height(56.dp)
+                            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary)
                         ) {
-                            Text("OK")
+                            Text("Reprendre maintenant")
+                        }
+                    } else {
+                        var jours by remember { mutableStateOf("") }
+                        var heures by remember { mutableStateOf("") }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(56.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = jours,
+                                    onValueChange = { newValue ->
+                                        if (newValue.all { it.isDigit() }) {
+                                            jours = newValue
+                                        }
+                                    },
+                                    placeholder = { Text("Jours") },
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("j", modifier = Modifier.padding(end = 4.dp))
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(56.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = heures,
+                                    onValueChange = { newValue ->
+                                        if (newValue.all { it.isDigit() }) {
+                                            val h = newValue.toIntOrNull() ?: 0
+                                            if (h >= 24) {
+                                                val extraDays = h / 24
+                                                val remainingHours = h % 24
+                                                jours = ((jours.toIntOrNull()
+                                                    ?: 0) + extraDays).toString()
+                                                heures = remainingHours.toString()
+                                            } else {
+                                                heures = newValue
+                                            }
+                                        }
+                                    },
+                                    placeholder = { Text("Heures") },
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("h", modifier = Modifier.padding(end = 4.dp))
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Button(
+                                onClick = {
+                                    scope.launch {
+                                        val totalHours =
+                                            (jours.toIntOrNull() ?: 0) * 24 + (heures.toIntOrNull()
+                                                ?: 0)
+                                        val userId = authRepo.getCurrentUserId()
+                                        val distributorId =
+                                            dataStoreManager.getSelectedDistributor()
+
+                                        if (userId != null && distributorId.isNotEmpty()) {
+                                            realtimeRepo.configureBreak(
+                                                userId = userId,
+                                                distributorId = distributorId,
+                                                duration = totalHours,
+                                                active = true
+                                            ) { success ->
+                                                if (success) {
+                                                    // Mise à jour immédiate de l'état
+                                                    isBreakActive.value = true
+                                                    // Calcul du temps de reprise
+                                                    val calendar = Calendar.getInstance()
+                                                    calendar.add(Calendar.HOUR_OF_DAY, totalHours)
+                                                    val hours = calendar.get(Calendar.HOUR_OF_DAY)
+                                                    val minutes = calendar.get(Calendar.MINUTE)
+                                                    breakResumeTime.value =
+                                                        String.format("%02d:%02d", hours, minutes)
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.height(56.dp)
+                            ) {
+                                Text("OK")
+                            }
                         }
                     }
                 }
@@ -199,112 +324,187 @@ fun PlanningScreen(navController: NavController) {
             distributions.forEachIndexed { index, time ->
                 var displayTime by remember { mutableStateOf(time) }
 
-                val dragThreshold = -30f // seuil pour montrer la poubelle
+
+                val maxOffset = -90f // déplacement maximal vers la gauche
 
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(IntrinsicSize.Min)
-                        .padding(vertical = 4.dp)
                 ) {
-                    // Icône de poubelle en arrière-plan (fixe)
-                    if (dragOffsetsX[index] < dragThreshold) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Supprimer",
-                            tint = Color.Red,
-                            modifier = Modifier
-                                .align(Alignment.CenterEnd)
-                                .padding(end = 24.dp)
-                                .clickable {
-                                    // Supprime la distribution et ses états associés
-                                    distributions.removeAt(index)
-                                    switchesState.removeAt(index)
-                                    dragOffsetsX.removeAt(index)
-                                }
-                        )
-                    }
-
-                    // Ligne draggable
-                    Card(
+                    // Icône de suppression visible derrière la card
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Supprimer",
+                        tint = Color.Red,
                         modifier = Modifier
-                            .offset(x = dragOffsetsX[index].dp)
-                            .fillMaxWidth()
-                            .pointerInput(Unit) {
-                                detectHorizontalDragGestures { _, dragAmount ->
-                                    dragOffsetsX[index] = (dragOffsetsX[index] + dragAmount).coerceIn(-100f, 0f)
-                                }
-                            }
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 24.dp)
                             .clickable {
-                                // Remet tous les dragOffsets à zéro quand on clique sur une ligne
-                                for (i in dragOffsetsX.indices) {
-                                    dragOffsetsX[i] = 0f
+                                scope.launch {
+                                    val userId = authRepo.getCurrentUserId()
+                                    val distributorId = dataStoreManager.getSelectedDistributor()
+                                    if (userId != null && distributorId.isNotEmpty()) {
+                                        val planningId = planningIds[index]
+                                        realtimeRepo.deletePlanning(
+                                            userId, distributorId, planningId
+                                        ) { success ->
+                                            Log.d("PlanningScreen", "Delete planning $index: $success")
+                                            if (success) {
+                                                distributions.removeAt(index)
+                                                dragOffsetsX.removeAt(index)
+                                                switchesState.removeAt(index)
+                                            }
+                                        }
+                                    } else {
+                                        // Fallback local
+                                        distributions.removeAt(index)
+                                        dragOffsetsX.removeAt(index)
+                                        switchesState.removeAt(index)
+                                    }
                                 }
-                                // Ouvre le TimePicker pour cette distribution
-                                val cal = Calendar.getInstance()
-                                val hour = displayTime.split(":").getOrNull(0)?.toIntOrNull() ?: cal.get(Calendar.HOUR_OF_DAY)
-                                val minute = displayTime.split(":").getOrNull(1)?.toIntOrNull() ?: cal.get(Calendar.MINUTE)
-
-                                TimePickerDialog(
-                                    context,
-                                    { _: TimePicker, selectedHour: Int, selectedMinute: Int ->
-                                        val formattedTime = "%02d:%02d".format(selectedHour, selectedMinute)
-                                        distributions[index] = formattedTime
-                                        displayTime = formattedTime
-                                    },
-                                    hour,
-                                    minute,
-                                    true
-                                ).show()
                             }
+                    )
+
+                    // Card glissante par-dessus
+                    Card(
+                        shape = RoundedCornerShape(8.dp),
+                        elevation = 2.dp,
+                        modifier = Modifier
+                            .offset(x = dragOffsetsX[index].coerceIn(maxOffset, 0f).dp)
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .pointerInput(Unit) {
+                                detectHorizontalDragGestures { _, _ ->
+                                    dragOffsetsX[index] = maxOffset
+                                }
+                            }
+
                     ) {
                         Row(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Schedule,
-                                    contentDescription = "Heure",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(text = displayTime, fontSize = 18.sp)
-                            }
+                            Text(
+                                text = displayTime,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable {
+                                        val calendar = Calendar.getInstance()
+                                        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+                                        val minute = calendar.get(Calendar.MINUTE)
 
-                            if (index == 0) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Distribué",
-                                    tint = MaterialTheme.colors.primary,
-                                    modifier = Modifier.size(40.dp)
-                                )
-                            } else {
-                                Switch(
-                                    checked = switchesState[index],
-                                    onCheckedChange = { isChecked ->
-                                        switchesState[index] = isChecked
-                                        // TODO : gérer changement état distribution ici
-                                    },
-                                    modifier = Modifier.size(40.dp, 40.dp)
-                                )
-                            }
+                                        val timePicker = TimePickerDialog(
+                                            context,
+                                            { _: TimePicker, h: Int, m: Int ->
+                                                displayTime = String.format("%02d:%02d", h, m)
+                                                val planningId = planningIds[index]
+                                                val checked = switchesState[index]
+
+                                                scope.launch {
+                                                    val userId = authRepo.getCurrentUserId()
+                                                    val distributorId = dataStoreManager.getSelectedDistributor()
+                                                    if (userId != null && distributorId.isNotEmpty()) {
+                                                        val updatedPlanning = mapOf(
+                                                            "time" to displayTime,
+                                                            "enabled" to checked
+                                                        )
+                                                        realtimeRepo.updatePlanning(
+                                                            userId, distributorId, planningId, updatedPlanning
+                                                        ) { success ->
+                                                            Log.d("PlanningScreen", "Update planning $planningId: $success")
+                                                            if (success) {
+                                                                refreshNewDistributionTime(userId, distributorId)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            hour, minute, true
+                                        )
+
+                                        timePicker.show()
+                                    }
+                            )
+
+                            Switch(
+                                checked = switchesState[index],
+                                onCheckedChange = { checked ->
+                                    switchesState[index] = checked
+                                    val planningId = planningIds[index]
+
+                                    scope.launch {
+                                        val userId = authRepo.getCurrentUserId()
+                                        val distributorId = dataStoreManager.getSelectedDistributor()
+                                        if (userId != null && distributorId.isNotEmpty()) {
+                                            val updateData = mapOf(
+                                                "time" to displayTime,
+                                                "enabled" to checked
+                                            )
+                                            Log.d("DEBUG_SWITCHES", "Données à mettre à jour (updateData) : $updateData")
+
+                                            realtimeRepo.updatePlanning(
+                                                userId, distributorId, planningId, updateData
+                                            ) { success ->
+                                                Log.d("PlanningScreen", "Update switch $index: $success")
+                                                if (success) {
+                                                    refreshNewDistributionTime(userId, distributorId)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            )
                         }
                     }
                 }
-            }
 
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
                     .clickable {
+                        // 1. Ajouter la distribution localement
                         distributions.add("00:00")
                         switchesState.add(true)
                         dragOffsetsX.add(0f)
+
+                        scope.launch{
+                            // 2. Calculer l'index de la nouvelle distribution (dernière position)
+                            val newIndex = distributions.size - 1
+
+                            // 3. Créer la map de mise à jour pour Firebase
+                            val updateData = mapOf(
+                                "time" to "00:00",
+                                "enabled" to true
+                            )
+
+                            val userId = authRepo.getCurrentUserId()
+                            val distributorId = dataStoreManager.getSelectedDistributor()
+
+                            // 4. Appeler la méthode d'update
+                            if (userId != null) {
+                                realtimeRepo.createPlanning(
+                                    userId,
+                                    distributorId,
+                                    updateData
+                                ) { success, planningId ->
+                                    Log.d("PlanningScreen", "Ajout distribution $newIndex : $success - ID: $planningId")
+                                    if (success) {
+                                        refreshPlannings(userId, distributorId)
+                                        refreshNewDistributionTime(userId, distributorId)
+                                    }
+
+                                }
+                            }
+                        }
+
+
                     },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
@@ -323,6 +523,7 @@ fun PlanningScreen(navController: NavController) {
                     fontSize = 16.sp
                 )
             }
+
         }
     }
 }
