@@ -19,7 +19,7 @@ sealed class BottomNavItem(val label: String, val icon: ImageVector,val route:St
     object Accueil : BottomNavItem("Accueil", Icons.Default.Home,"home")
     object Planning : BottomNavItem("Planning", Icons.Default.Schedule,"planning")
     object Historique : BottomNavItem("Historique", Icons.Default.History,"history")
-    object Reglages : BottomNavItem("Réglages", Icons.Default.Settings,"settings")
+    object Reglages : BottomNavItem("Réglages", Icons.Default.Settings,"setting")
 }
 
 @Composable

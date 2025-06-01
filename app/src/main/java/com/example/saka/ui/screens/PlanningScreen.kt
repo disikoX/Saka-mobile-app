@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 //noinspection UsingMaterialAndMaterial3Libraries
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
@@ -33,6 +33,7 @@ import com.example.saka.auth.AuthRepository
 import com.example.saka.backend.RealtimeDatabaseRepository
 import java.util.*
 import com.example.saka.local.DataStoreManager
+import com.example.saka.ui.components.TopBar
 import kotlinx.coroutines.launch
 
 @SuppressLint("DefaultLocale")
@@ -130,6 +131,7 @@ fun PlanningScreen(navController: NavController) {
     val context = LocalContext.current
 
     Scaffold(
+        topBar = { TopBar(navController) },
         bottomBar = { BottomNavigationBar(current = "Planning", navController) }
     ) { paddingValues ->
         Column(
@@ -144,10 +146,10 @@ fun PlanningScreen(navController: NavController) {
                     }
                 }
         ) {
-            Text("Planning de Distribution", style = MaterialTheme.typography.h6)
+            Text("Planning de Distribution", fontWeight = FontWeight.Bold)
 
             Card(
-                backgroundColor = Color(0xFFFFEBEE),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -168,7 +170,7 @@ fun PlanningScreen(navController: NavController) {
             }
 
             Card(
-                backgroundColor = Color(0xFFFFEBEE),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
@@ -209,7 +211,7 @@ fun PlanningScreen(navController: NavController) {
                                     }
                                 }
                             },
-                            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary)
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
                             Text("Reprendre maintenant")
                         }
@@ -369,7 +371,7 @@ fun PlanningScreen(navController: NavController) {
                     // Card glissante par-dessus
                     Card(
                         shape = RoundedCornerShape(8.dp),
-                        elevation = 2.dp,
+                        elevation = CardDefaults.cardElevation(2.dp),
                         modifier = Modifier
                             .offset(x = dragOffsetsX[index].coerceIn(maxOffset, 0f).dp)
                             .fillMaxWidth()
@@ -378,8 +380,10 @@ fun PlanningScreen(navController: NavController) {
                                 detectHorizontalDragGestures { _, _ ->
                                     dragOffsetsX[index] = maxOffset
                                 }
-                            }
-
+                            },
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -512,13 +516,13 @@ fun PlanningScreen(navController: NavController) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Ajouter",
-                    tint = MaterialTheme.colors.primary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(32.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Ajouter une distribution",
-                    color = MaterialTheme.colors.primary,
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium,
                     fontSize = 16.sp
                 )
