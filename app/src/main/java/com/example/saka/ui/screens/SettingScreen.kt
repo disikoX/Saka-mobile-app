@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingScreen(navController: NavController) {
     val authRepo = AuthRepository()
-    val realtimeRepo = RealtimeDatabaseRepository() // 🔧 Repository pour interagir avec Firebase Realtime Database
+    val realtimeRepo = RealtimeDatabaseRepository() // 🔧 Repository pour integrate avec Firebase Realtime Database
     val context = LocalContext.current
     val dataStoreManager = remember { DataStoreManager(context) }
 
