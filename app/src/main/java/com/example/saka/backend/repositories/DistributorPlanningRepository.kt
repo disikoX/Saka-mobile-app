@@ -1,8 +1,14 @@
 package com.example.saka.backend.repositories
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.ValueEventListener
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -98,4 +104,151 @@ class DistributorPlanningRepository(private val dbRef: DatabaseReference) {
             .addOnSuccessListener { onComplete(true) }
             .addOnFailureListener { onComplete(false) }
     }
+
+    fun configureBreak(
+        userId: String,
+        distributorId: String,
+        duration: Int,
+        active: Boolean,
+        onComplete: (success: Boolean) -> Unit
+    ) {
+        val breakData = mapOf(
+            "duration" to duration,
+            "active" to active
+        )
+
+        val breakPath = "users/$userId/distributors/$distributorId/planning/break"
+
+        dbRef.child(breakPath).setValue(breakData)
+            .addOnSuccessListener {
+                onComplete(true)
+            }
+            .addOnFailureListener {
+                onComplete(false)
+            }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun getNextDistributionTime(
+        userId: String,
+        distributorId: String,
+        onResult: (nextTime: String?) -> Unit
+    ) {
+        val planningRef = dbRef.child("users")
+            .child(userId)
+            .child("distributors")
+            .child(distributorId)
+            .child("planning")
+
+        planningRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val now = LocalTime.now()
+                val today = LocalDate.now()
+                var nextDateTime: LocalDateTime? = null
+
+                for (planningSnapshot in snapshot.children) {
+                    val key = planningSnapshot.key ?: continue
+                    if (key == "break") continue
+
+                    val timeStr = planningSnapshot.child("time").getValue(String::class.java)
+                    val enabled = planningSnapshot.child("enabled").getValue(Boolean::class.java) ?: false
+
+                    if (!enabled || timeStr.isNullOrBlank()) continue
+
+                    try {
+                        val planningTime = LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("HH:mm"))
+                        var candidateDateTime = LocalDateTime.of(today, planningTime)
+
+                        // Si l’heure est déjà passée aujourd’hui, considérer le lendemain
+                        if (candidateDateTime.isBefore(LocalDateTime.of(today, now))) {
+                            candidateDateTime = candidateDateTime.plusDays(1)
+                        }
+
+                        if (nextDateTime == null || candidateDateTime.isBefore(nextDateTime)) {
+                            nextDateTime = candidateDateTime
+                        }
+
+                    } catch (e: DateTimeParseException) {
+                        Log.e("PlanningRepository", "Invalid time format in planning: $timeStr")
+                    }
+                }
+
+                val result = nextDateTime?.toLocalTime()?.format(DateTimeFormatter.ofPattern("HH:mm"))
+                onResult(result)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("PlanningRepository", "Error fetching planning: ${error.message}")
+                onResult(null)
+            }
+        })
+    }
+
+
+    fun getBreakInfos(
+        userId: String,
+        distributorId: String,
+        onResult: (duration: Int?, active: Boolean?) -> Unit
+    ) {
+        val breakRef = dbRef.child("users")
+            .child(userId)
+            .child("distributors")
+            .child(distributorId)
+            .child("planning")
+            .child("break")
+
+        breakRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val duration = snapshot.child("duration").getValue(Int::class.java)
+                val active = snapshot.child("active").getValue(Boolean::class.java)
+                onResult(duration, active)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("PlanningRepository", "Error fetching break info: ${error.message}")
+                onResult(null, null)
+            }
+        })
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun getPlannings(
+        userId: String,
+        distributorId: String,
+        onResult: (plannings: Map<String, Map<String, Any>>) -> Unit
+    ) {
+        val planningRef = dbRef.child("users")
+            .child(userId)
+            .child("distributors")
+            .child(distributorId)
+            .child("planning")
+
+        planningRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val planningMap = mutableMapOf<String, Map<String, Any>>()
+
+                for (planningSnapshot in snapshot.children) {
+                    val key = planningSnapshot.key ?: continue
+                    if (key == "break") continue
+
+                    val time = planningSnapshot.child("time").getValue(String::class.java) ?: "00:00"
+                    val enabled = planningSnapshot.child("enabled").getValue(Boolean::class.java) ?: false
+
+                    planningMap[key] = mapOf(
+                        "time" to time,
+                        "enabled" to enabled
+                    )
+                }
+
+                onResult(planningMap)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("PlanningRepository", "Error fetching plannings: ${error.message}")
+                onResult(emptyMap())
+            }
+        })
+    }
+
+
 }

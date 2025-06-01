@@ -12,6 +12,7 @@ import com.example.saka.backend.repositories.DistributorSettingsRepository
 import com.example.saka.backend.repositories.DistributorObserverRepository
 import com.example.saka.backend.repositories.DistributorPlanningRepository
 import com.example.saka.backend.repositories.DistributorTriggerRepository
+import com.example.saka.backend.repositories.DistributorRepository
 
 /**
  * RealtimeDatabaseRepository agit comme façade principale pour la gestion
@@ -30,6 +31,7 @@ class RealtimeDatabaseRepository {
     private val observerRepo = DistributorObserverRepository(dbRef)
     private val planningRepo = DistributorPlanningRepository(dbRef)
     private val triggerRepo = DistributorTriggerRepository(dbRef)
+    val distributorRepo=DistributorRepository(dbRef)
 
     // ----------------------- UTILISATEUR ------------------------
 
@@ -132,6 +134,20 @@ class RealtimeDatabaseRepository {
     }
 
     /**
+     * Configure la pause (durée et activation) dans le planning d’un distributeur.
+     */
+    fun configureBreak(
+        userId: String,
+        distributorId: String,
+        duration: Int,
+        active: Boolean,
+        onComplete: (success: Boolean) -> Unit
+    ) {
+        planningRepo.configureBreak(userId, distributorId, duration, active, onComplete)
+    }
+
+
+    /**
      * Met à jour un planning existant identifié par planningId.
      */
     @RequiresApi(Build.VERSION_CODES.O)
@@ -157,6 +173,43 @@ class RealtimeDatabaseRepository {
         planningRepo.deletePlanning(userId, distributorId, planningId, onComplete)
     }
 
+    /**
+     * Récupère la prochaine heure de distribution active, en tenant compte des plannings du distributeur.
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun getNextDistributionTime(
+        userId: String,
+        distributorId: String,
+        onResult: (nextTime: String?) -> Unit
+    ) {
+        planningRepo.getNextDistributionTime(userId, distributorId, onResult)
+    }
+
+    /**
+     * Récupère les informations de la pause configurée pour un distributeur.
+     */
+    fun getBreakInfos(
+        userId: String,
+        distributorId: String,
+        onResult: (duration: Int?, active: Boolean?) -> Unit
+    ) {
+        planningRepo.getBreakInfos(userId, distributorId, onResult)
+    }
+
+    /**
+     * Récupère la liste des plannings (hors pause) pour un distributeur donné.
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun getPlannings(
+        userId: String,
+        distributorId: String,
+        onResult: (plannings: Map<String, Map<String, Any>>) -> Unit
+    ) {
+        planningRepo.getPlannings(userId, distributorId, onResult)
+    }
+
+
+
     // ----------------------- TRIGGER MANUEL ------------------------
 
     /**
@@ -167,5 +220,17 @@ class RealtimeDatabaseRepository {
     fun triggerNow(userId: String, distributorId: String) {
         triggerRepo.setTriggerNow(userId, distributorId, true)
     }
+
+    // ----------------------- DISTRIBUTEUR ------------------------
+
+    /**
+     * Récupère le statut du distributeur
+     */
+    fun getDistributorStatus(distributorId: String, onResult: (String?) -> Unit) {
+        distributorRepo.getDistributorStatus(distributorId) { status ->
+            onResult(status)
+        }
+    }
+
 
 }
