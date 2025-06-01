@@ -3,6 +3,7 @@ package com.example.saka.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
@@ -19,22 +20,27 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.example.saka.ui.components.BottomNavigationBar
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.example.saka.ui.components.TopBar
 
 @Composable
 fun HistoryScreen(navController: NavController) {
     var selectedPeriod by remember { mutableStateOf("Aujourd'hui") }
+    val scrollState = rememberScrollState()
 
     Scaffold(
+        topBar = { TopBar(navController) },
         bottomBar = { BottomNavigationBar(current = "history", navController) }
     ) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .verticalScroll(scrollState)
                 .background(MaterialTheme.colorScheme.background)
         ) {
             // Périodes de filtre

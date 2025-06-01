@@ -15,6 +15,7 @@ import com.example.saka.backend.RealtimeDatabaseRepository
 import com.example.saka.ui.components.Header
 import com.example.saka.ui.components.SidebarMenu
 import com.example.saka.local.DataStoreManager
+import com.example.saka.ui.components.BottomNavigationBar
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,7 +66,7 @@ fun SettingScreen(navController: NavController) {
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            Surface(color = Color(0xFFE3F2FD), modifier = Modifier.fillMaxHeight()) {
+            Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxHeight()) {
                 SidebarMenu(
                     currentScreen = "setting",
                     onNavigateToScreen = { route ->
@@ -93,6 +94,7 @@ fun SettingScreen(navController: NavController) {
         }
     ) {
         Scaffold(
+            bottomBar = { BottomNavigationBar(current = "setting", navController) },
             topBar = {
                 TopAppBar(
                     title = {
@@ -177,7 +179,11 @@ fun SettingScreen(navController: NavController) {
                         },
                         label = { Text("Quantité de la ration (à définir en g)") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                        )
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
