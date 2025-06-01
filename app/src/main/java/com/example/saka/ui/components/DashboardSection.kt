@@ -34,7 +34,7 @@ fun DashboardSection() {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(120.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFDAD4)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Row(
@@ -63,7 +63,7 @@ fun DashboardSection() {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(80.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFDAD4)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Row(
@@ -73,15 +73,15 @@ fun DashboardSection() {
                 Icon(
                     imageVector = Icons.Default.Schedule,
                     contentDescription = null,
-                    tint = Color(0xFF7D5260),
+                    tint = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier
                         .padding(end = 12.dp)
                         .size(32.dp)
                 )
 
                 Column {
-                    Text("Prochain repas", color = Color(0xFF7D5260), fontWeight = FontWeight.Bold)
-                    Text("prévu à 18:00", color = Color(0xFF7D5260))
+                    Text("Prochain repas", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
+                    Text("prévu à 18:00", color = MaterialTheme.colorScheme.secondary)
                 }
             }
         }
@@ -93,8 +93,8 @@ fun InfoItem(icon: ImageVector, value: String, label: String) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(icon, contentDescription = null, tint = Color(0xFF7D5260), modifier = Modifier.size(24.dp))
-        Text(text = value, fontWeight = FontWeight.Bold, color = Color(0xFF7D5260))
-        Text(text = label, fontSize = 12.sp, color = Color(0xFF7D5260))
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(24.dp))
+        Text(text = value, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+        Text(text = label, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
     }
 }

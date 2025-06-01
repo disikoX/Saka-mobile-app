@@ -30,15 +30,15 @@ fun HomeScreen(navController: NavController) {
     Scaffold(
         bottomBar = { BottomNavigationBar(current = "home", navController) }
     ) {
-        Text("Mon Distributeur : distributeur 123", style = MaterialTheme.typography.titleLarge)
-        Spacer(modifier = Modifier.height(24.dp))
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(it)
-                .padding(16.dp),
+                .padding(16.dp)
+                .background(MaterialTheme.colorScheme.background),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Text("Mon Distributeur : ", style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(24.dp))
             //Circular Progress Indicator
             Box(
@@ -51,7 +51,8 @@ fun HomeScreen(navController: NavController) {
                     progress = 0.73f,
                     modifier = Modifier.fillMaxSize(),
                     strokeWidth = 12.dp,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.secondary
                 )
                 Text(
                     text = "73%",
