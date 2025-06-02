@@ -51,7 +51,7 @@ class TestRealtimeDatabaseActivity : ComponentActivity() {
         }
     }
 
-    private fun showCriticalNotification(distributorId: String, weight: Float) {
+    private fun showCriticalNotification(distributorId: String, weight: Int) {
         val builder = NotificationCompat.Builder(this, "critical_channel")
             .setSmallIcon(android.R.drawable.stat_notify_error)
             .setContentTitle("Alerte de poids critique")
