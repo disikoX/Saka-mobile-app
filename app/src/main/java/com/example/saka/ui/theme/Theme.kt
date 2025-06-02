@@ -11,28 +11,34 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+// Optional: Create a full color scheme
+val LightColorScheme = lightColorScheme(
+    primary = PrimaryLight,
+    onPrimary = OnPrimary,
+    secondary = Secondary,
+    onSecondary = OnSecondary,
+    tertiary = Tertiary,
+    background = BackgroundLight,
+    onBackground = OnBackground,
+    surface = SurfaceLight,
+    onSurface = OnSurface,
+    error = Error,
+    onError = OnError
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+val DarkColorScheme = darkColorScheme(
+    primary = PrimaryDark,
+    onPrimary = OnPrimary,
+    secondary = Secondary,
+    onSecondary = OnSecondary,
+    tertiary = Tertiary,
+    background = BackgroundDark,
+    onBackground = OnBackground,
+    surface = SurfaceDark,
+    onSurface = OnSurface,
+    error = Error,
+    onError = OnError
 )
-
 @Composable
 fun SakaTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),

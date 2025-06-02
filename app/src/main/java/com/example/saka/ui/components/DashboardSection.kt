@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +23,44 @@ fun DashboardSection() {
             .fillMaxWidth()
             .padding(16.dp)
     ) {
+        //Alerte Section : à afficher seulement si le seuil inférieur à 20%
+        Text(
+            text = "Alerte",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier
+                        .padding(end = 12.dp)
+                        .size(32.dp)
+                )
+
+                Column {
+                    Text("Niveau de croquettes bas", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
+                    Row{
+                        Text("20% ", color = Color.Red,fontWeight = FontWeight.Bold)
+                        Text("restants", color = MaterialTheme.colorScheme.secondary)
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // 🟤 Section "Aujourd'hui"
         Text(
@@ -34,7 +73,7 @@ fun DashboardSection() {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(120.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFDAD4)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Row(
@@ -63,7 +102,7 @@ fun DashboardSection() {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(80.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFDAD4)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Row(
@@ -73,15 +112,15 @@ fun DashboardSection() {
                 Icon(
                     imageVector = Icons.Default.Schedule,
                     contentDescription = null,
-                    tint = Color(0xFF7D5260),
+                    tint = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier
                         .padding(end = 12.dp)
                         .size(32.dp)
                 )
 
                 Column {
-                    Text("Prochain repas", color = Color(0xFF7D5260), fontWeight = FontWeight.Bold)
-                    Text("prévu à 18:00", color = Color(0xFF7D5260))
+                    Text("Prochain repas", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
+                    Text("prévu à 18:00", color = MaterialTheme.colorScheme.secondary)
                 }
             }
         }
@@ -93,8 +132,8 @@ fun InfoItem(icon: ImageVector, value: String, label: String) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(icon, contentDescription = null, tint = Color(0xFF7D5260), modifier = Modifier.size(24.dp))
-        Text(text = value, fontWeight = FontWeight.Bold, color = Color(0xFF7D5260))
-        Text(text = label, fontSize = 12.sp, color = Color(0xFF7D5260))
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(24.dp))
+        Text(text = value, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+        Text(text = label, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
     }
 }
