@@ -23,4 +23,20 @@ class DistributorRepository(private val dbRef: DatabaseReference) {
             }
         })
     }
+
+    fun getCapacity(distributorId: String, onResult: (Int?) -> Unit) {
+        val capacityRef = dbRef.child("distributors").child(distributorId).child("capacity")
+
+        capacityRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val capacity = snapshot.getValue(Int::class.java)
+                onResult(capacity)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("DistributorRepository", "Database error: ${error.message}")
+                onResult(null)
+            }
+        })
+    }
 }

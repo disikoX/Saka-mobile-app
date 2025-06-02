@@ -13,6 +13,8 @@ import com.example.saka.backend.repositories.DistributorObserverRepository
 import com.example.saka.backend.repositories.DistributorPlanningRepository
 import com.example.saka.backend.repositories.DistributorTriggerRepository
 import com.example.saka.backend.repositories.DistributorRepository
+import com.example.saka.backend.repositories.HistoryRepository
+import com.example.saka.backend.repositories.SuccessStats
 
 /**
  * RealtimeDatabaseRepository agit comme façade principale pour la gestion
@@ -32,6 +34,7 @@ class RealtimeDatabaseRepository {
     private val planningRepo = DistributorPlanningRepository(dbRef)
     private val triggerRepo = DistributorTriggerRepository(dbRef)
     val distributorRepo=DistributorRepository(dbRef)
+    val historyRepo=HistoryRepository(dbRef)
 
     // ----------------------- UTILISATEUR ------------------------
 
@@ -111,7 +114,7 @@ class RealtimeDatabaseRepository {
     fun observeCurrentWeight(
         userId: String,
         distributorId: String,
-        onWeightChanged: (Float) -> Unit,
+        onWeightChanged: (Int) -> Unit,
         onError: (DatabaseError) -> Unit
     ): DistributorObserverRepository.WeightListenerHandle {
         return observerRepo.observeCurrentWeight(userId, distributorId, onWeightChanged, onError)
@@ -231,6 +234,28 @@ class RealtimeDatabaseRepository {
             onResult(status)
         }
     }
+
+    /**
+     * Récupère la capacité du distributeur
+     */
+    fun getCapacity(distributorId: String, onResult: (Int?) -> Unit) {
+        distributorRepo.getCapacity(distributorId) { capacity ->
+            onResult(capacity)
+        }
+    }
+
+    // ----------------------- HISTORIQUE ------------------------
+    fun getSuccessStats(
+        userId: String,
+        distributorId: String,
+        onResult: (SuccessStats) -> Unit
+    ) {
+        historyRepo.getSuccessStats(userId, distributorId) { stats ->
+            // Tu peux traiter les stats ici si besoin
+            onResult(stats)  // transmet le résultat à l’appelant
+        }
+    }
+
 
 
 }

@@ -25,7 +25,7 @@ class DistributorObserverRepository(
     fun observeCurrentWeight(
         userId: String,
         distributorId: String,
-        onWeightChanged: (Float) -> Unit,
+        onWeightChanged: (Int) -> Unit,
         onError: (DatabaseError) -> Unit
     ): WeightListenerHandle {
         val weightRef = dbRef
@@ -37,7 +37,7 @@ class DistributorObserverRepository(
 
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val weight = snapshot.getValue(Float::class.java)
+                val weight = snapshot.getValue(Int::class.java)
                 if (weight != null) {
                     onWeightChanged(weight)
                 } else {
