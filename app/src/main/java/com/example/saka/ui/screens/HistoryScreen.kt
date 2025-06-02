@@ -45,12 +45,12 @@ fun HistoryScreen(navController: NavController) {
         ) {
             // Périodes de filtre
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
                 modifier = Modifier
                     .padding(16.dp)
                     .fillMaxWidth()
             ) {
-                listOf("Aujourd'hui", "Cette semaine", "Ce mois").forEach { period ->
+                listOf("Aujourd'hui", "Cette semaine").forEach { period ->
                     FilterChip(
                         selected = period == selectedPeriod,
                         onClick = { selectedPeriod = period },
@@ -69,53 +69,6 @@ fun HistoryScreen(navController: NavController) {
                             )
                         }
                     )
-                }
-            }
-
-            // Résumé
-            Card(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        "Aujourd'hui, 23 Février",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "180g distribués",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontSize = 14.sp
-                            ),
-                            color = Color(0xFF53433F).copy(alpha = 0.8f)
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            "•", // Séparateur
-                            color = Color(0xFF53433F).copy(alpha = 0.4f),
-                            modifier = Modifier.padding(bottom = 2.dp)
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            "3 distributions",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontSize = 14.sp
-                            ),
-                            color = Color(0xFF53433F).copy(alpha = 0.8f)
-                        )
-                    }
                 }
             }
 
