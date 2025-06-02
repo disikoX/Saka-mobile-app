@@ -3,8 +3,9 @@ package com.example.saka.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Verified
@@ -18,46 +19,103 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.example.saka.ui.components.BottomNavigationBar
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.example.saka.ui.components.TopBar
 
 @Composable
 fun HistoryScreen(navController: NavController) {
+    var selectedPeriod by remember { mutableStateOf("Aujourd'hui") }
+    val scrollState = rememberScrollState()
+
     Scaffold(
-        bottomBar = { BottomNavigationBar(current = "Historique",navController) }
-    ) { paddingValues ->
+        topBar = { TopBar(navController) },
+        bottomBar = { BottomNavigationBar(current = "history", navController) }
+    ) { padding ->
         Column(
             modifier = Modifier
-                .padding(paddingValues)
-                .padding(16.dp)
+                .padding(padding)
                 .fillMaxSize()
+                .verticalScroll(scrollState)
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            Text(
-                text = "Historique des Distributions",
-                style = MaterialTheme.typography.h6,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
+            // Périodes de filtre
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
             ) {
-                listOf("Aujourd'hui", "Cette semaine", "Ce mois").forEach { label ->
-                    OutlinedButton(onClick = { /* TODO */ }) {
-                        Text(label)
-                    }
+                listOf("Aujourd'hui", "Cette semaine", "Ce mois").forEach { period ->
+                    FilterChip(
+                        selected = period == selectedPeriod,
+                        onClick = { selectedPeriod = period },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            labelColor = MaterialTheme.colorScheme.onSurface,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        label = {
+                            Text(
+                                period,
+                                fontSize = 14.sp,
+                                fontWeight = if (period == selectedPeriod) FontWeight.Medium else FontWeight.Normal
+                            )
+                        }
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
+            // Résumé
             Card(
-                backgroundColor = Color(0xFFFFEBEE),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Aujourd'hui, 23 Février", fontWeight = FontWeight.Bold)
-                    Text("180g distribués", fontSize = 14.sp)
-                    Text("3 distributions", fontSize = 14.sp)
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        "Aujourd'hui, 23 Février",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "180g distribués",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 14.sp
+                            ),
+                            color = Color(0xFF53433F).copy(alpha = 0.8f)
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            "•", // Séparateur
+                            color = Color(0xFF53433F).copy(alpha = 0.4f),
+                            modifier = Modifier.padding(bottom = 2.dp)
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            "3 distributions",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 14.sp
+                            ),
+                            color = Color(0xFF53433F).copy(alpha = 0.8f)
+                        )
+                    }
                 }
             }
 
@@ -72,7 +130,12 @@ fun HistoryScreen(navController: NavController) {
             historyItems.forEach { (time, quantity, success) ->
                 Card(
                     shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -82,7 +145,7 @@ fun HistoryScreen(navController: NavController) {
                         Icon(
                             imageVector = Icons.Default.Pets,
                             contentDescription = null,
-                            tint = MaterialTheme.colors.primary
+                            tint = MaterialTheme.colorScheme.primary
                         )
                         Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
                             Text(time, fontWeight = FontWeight.Bold)
@@ -104,3 +167,4 @@ fun HistoryScreen(navController: NavController) {
         }
     }
 }
+
