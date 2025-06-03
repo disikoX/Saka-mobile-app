@@ -29,10 +29,15 @@ class DistributorAssignmentRepository(private val dbRef: DatabaseReference) {
             }
 
             // Préparer les updates atomiques sur plusieurs chemins
+            val userDistributorData = mapOf(
+                "currentWeight" to 0
+                // tu peux ajouter d'autres champs ici si nécessaire
+            )
+
             val updates = mapOf<String, Any?>(
                 "/distributors/$distributorId/assignedTo" to userId,
                 "/distributors/$distributorId/lastUpdate" to System.currentTimeMillis(),
-                "/users/$userId/distributors/$distributorId" to true
+                "/users/$userId/distributors/$distributorId" to userDistributorData
             )
 
             dbRef.updateChildren(updates)
@@ -44,6 +49,7 @@ class DistributorAssignmentRepository(private val dbRef: DatabaseReference) {
                     Log.e(TAG, "Failed to assign distributor $distributorId", e)
                     onResult(false)
                 }
+
         }.addOnFailureListener { e ->
             Log.e(TAG, "Failed to fetch distributor $distributorId", e)
             onResult(false)
