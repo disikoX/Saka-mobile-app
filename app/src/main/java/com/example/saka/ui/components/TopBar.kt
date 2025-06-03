@@ -57,7 +57,7 @@ fun TopBar(navController: NavController) {
                 )
                 Row() {
                     Text(
-                        text = "distributeur: ",
+                        text = "Distributeur: ",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = MaterialTheme.colorScheme.onSurface // Brun foncé de votre palette
                         )
