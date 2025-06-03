@@ -1,6 +1,7 @@
 package com.example.saka.backend
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.auth.FirebaseAuth
@@ -13,6 +14,9 @@ import com.example.saka.backend.repositories.DistributorObserverRepository
 import com.example.saka.backend.repositories.DistributorPlanningRepository
 import com.example.saka.backend.repositories.DistributorTriggerRepository
 import com.example.saka.backend.repositories.DistributorRepository
+import com.example.saka.backend.repositories.HistoryEntry
+import com.example.saka.backend.repositories.HistoryRepository
+import com.example.saka.backend.repositories.SuccessStats
 
 /**
  * RealtimeDatabaseRepository agit comme façade principale pour la gestion
@@ -32,6 +36,7 @@ class RealtimeDatabaseRepository {
     private val planningRepo = DistributorPlanningRepository(dbRef)
     private val triggerRepo = DistributorTriggerRepository(dbRef)
     val distributorRepo=DistributorRepository(dbRef)
+    val historyRepo=HistoryRepository(dbRef)
 
     // ----------------------- UTILISATEUR ------------------------
 
@@ -111,7 +116,7 @@ class RealtimeDatabaseRepository {
     fun observeCurrentWeight(
         userId: String,
         distributorId: String,
-        onWeightChanged: (Float) -> Unit,
+        onWeightChanged: (Int) -> Unit,
         onError: (DatabaseError) -> Unit
     ): DistributorObserverRepository.WeightListenerHandle {
         return observerRepo.observeCurrentWeight(userId, distributorId, onWeightChanged, onError)
@@ -229,6 +234,43 @@ class RealtimeDatabaseRepository {
     fun getDistributorStatus(distributorId: String, onResult: (String?) -> Unit) {
         distributorRepo.getDistributorStatus(distributorId) { status ->
             onResult(status)
+        }
+    }
+
+    /**
+     * Récupère la capacité du distributeur
+     */
+    fun getCapacity(distributorId: String, onResult: (Int?) -> Unit) {
+        distributorRepo.getCapacity(distributorId) { capacity ->
+            onResult(capacity)
+        }
+    }
+
+    // ----------------------- HISTORIQUE ------------------------
+    fun getSuccessStats(
+        userId: String,
+        distributorId: String,
+        onResult: (SuccessStats) -> Unit
+    ) {
+        historyRepo.getSuccessStats(userId, distributorId) { stats ->
+            // Tu peux traiter les stats ici si besoin
+            onResult(stats)  // transmet le résultat à l’appelant
+        }
+    }
+
+    fun getHistory(
+        userId: String,
+        distributorId: String,
+        onResult: (List<HistoryEntry>) -> Unit
+    ) {
+        historyRepo.getHistory(userId, distributorId) { historyList ->
+            // Tu peux faire un log ici si tu veux
+            for (entry in historyList) {
+                Log.d("HistoryViewModel", "Entry: success=${entry.success}, time=${entry.time}, quantity=${entry.quantity}")
+            }
+
+            // Transmettre à l'appelant
+            onResult(historyList)
         }
     }
 
