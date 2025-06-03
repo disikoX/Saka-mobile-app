@@ -10,7 +10,41 @@ data class SuccessStats(
     val latestTime: Long
 )
 
+data class HistoryEntry(
+    val success: Boolean = false,
+    val time: Long = 0L,
+    val quantity: Int = 0
+)
+
 class HistoryRepository(private val dbRef: DatabaseReference) {
+    fun getHistory(userId: String, distributorId: String, onResult: (List<HistoryEntry>) -> Unit) {
+        val historyRef = dbRef
+            .child("users")
+            .child(userId)
+            .child("distributors")
+            .child(distributorId)
+            .child("history")
+
+        historyRef.get().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val snapshot = task.result
+                val historyList = mutableListOf<HistoryEntry>()
+
+                for (entry in snapshot.children) {
+                    val success = entry.child("success").getValue(Boolean::class.java) ?: false
+                    val time = entry.child("time").getValue(Long::class.java) ?: 0L
+                    val quantity = entry.child("quantity").getValue(Int::class.java) ?: 0
+                    historyList.add(HistoryEntry(success, time, quantity))
+                }
+
+                onResult(historyList)
+            } else {
+                Log.e("HistoryRepository", "Erreur lors de la récupération de l'historique : ${task.exception}")
+                onResult(emptyList())
+            }
+        }
+    }
+
     fun getSuccessStats(userId: String, distributorId: String, onResult: (SuccessStats) -> Unit) {
         val historyRef = dbRef
             .child("users")

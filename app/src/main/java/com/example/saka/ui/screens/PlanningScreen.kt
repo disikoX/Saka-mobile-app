@@ -72,6 +72,35 @@ fun PlanningScreen(navController: NavController) {
                 switchesState.add(enabled)
                 dragOffsetsX.add(0f)
                 planningIds.add(planningId)
+
+                // Créer une liste d'indices triés selon les horaires dans 'distributions'
+                val sortedIndices = distributions.indices.sortedBy { index ->
+                    val timeValue = distributions[index]
+                    val parts = timeValue.split(":")
+                    val hour = parts.getOrNull(0)?.toIntOrNull() ?: 0
+                    val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                    hour * 60 + minute
+                }
+
+// Réordonner toutes les listes en fonction de cet ordre
+                val sortedDistributions = sortedIndices.map { distributions[it] }.toMutableList()
+                val sortedPlanningIds = sortedIndices.map { planningIds[it] }.toMutableList()
+                val sortedSwitchesState = sortedIndices.map { switchesState[it] }.toMutableList()
+                val sortedDragOffsetsX = sortedIndices.map { dragOffsetsX[it] }.toMutableList()
+
+// Remplacer les listes originales par les versions triées
+                distributions.clear()
+                distributions.addAll(sortedDistributions)
+
+                planningIds.clear()
+                planningIds.addAll(sortedPlanningIds)
+
+                switchesState.clear()
+                switchesState.addAll(sortedSwitchesState)
+
+                dragOffsetsX.clear()
+                dragOffsetsX.addAll(sortedDragOffsetsX)
+
             }
         }
     }
@@ -132,7 +161,7 @@ fun PlanningScreen(navController: NavController) {
 
     Scaffold(
         topBar = { TopBar(navController) },
-        bottomBar = { BottomNavigationBar(current = "Planning", navController) }
+        bottomBar = { BottomNavigationBar(current = "planning", navController) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -161,7 +190,6 @@ fun PlanningScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(status.value, fontSize = 14.sp)
-                        Text("75% restant", fontSize = 14.sp)
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text("Prochaine distribution :", fontWeight = FontWeight.Bold)
