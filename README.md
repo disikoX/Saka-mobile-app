@@ -17,7 +17,7 @@ Software Parts:
  - Kotlin
  - Firebase
 
-The repository for the mobile app code [Saka-embedded-system](https://github.com/disikoX/Saka-embedded-system)
+The repository for the embedded sytem code [Saka-embedded-system](https://github.com/disikoX/Saka-embedded-system)
 
 ## Project of Communication Protocol for IOT
 Repository of our project, we are fourth year students of the `OCC` track for the year 2024-2025 at [ENI](https://eni.mg/)
